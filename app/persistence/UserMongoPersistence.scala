@@ -47,17 +47,17 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
   override def createUser(user: User): Option[Int] = {
     withMongoConnection {
       Await.result(
-      users.update(
-      BSONDocument("username" -> user.username),
-      user,
-      upsert = true
-      ).map {
-        lastError =>
-        lastError.ok match {
-          case true => user.id
-          case false => throw new Exception(lastError)
-        }
-      }, 5.seconds
+        users.update(
+          BSONDocument("username" -> user.username),
+          user,
+          upsert = true
+        ).map {
+          lastError =>
+            lastError.ok match {
+              case true => user.id
+              case false => throw new Exception(lastError)
+            }
+        }, 5.seconds
       )
     } match {
       case Success(id) => //TODO whats new_user

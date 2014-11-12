@@ -1,7 +1,7 @@
 package controllers
 
 import akka.actor.ActorSystem
-import models.UserActor
+import models.{GroupActor, UserActor}
 import persistence.{GroupMongoPersistence, UserMongoPersistence}
 import play.api.mvc._
 
@@ -22,6 +22,22 @@ object Application extends Controller {
 
   def getUsers = Action {
     Ok("{'name': 'ruben', password: '30vinte'}").as("application/json")
+  }
+
+  def createUser = Action { request =>
+    request.body.asText match {
+      case Some(json) => mUser ! json
+      case None => println("No data to parse")
+    }
+    Ok("{ 'id': 37 }").as("application/json")
+  }
+
+  def createGroup = Action { request =>
+    request.body.asText match {
+      case Some(json) => mGroup ! json
+      case None => println("No data to parse")
+    }
+    Ok("cenas").as("application/json")
   }
 
 }

@@ -5,13 +5,13 @@ import models.Group
 import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.Ascending
-import reactivemongo.api.{DefaultDB, MongoConnection, MongoDriver}
+import reactivemongo.api.{DefaultDB, MongoDriver}
 import reactivemongo.bson.BSONDocument
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by ruben on 11-11-2014.
@@ -25,20 +25,17 @@ object GroupMongoPersistence {
 
 class GroupMongoPersistence (db_name: String, collection_name: String) extends GroupPersistence with ActorLogging{
 
-  var driver: MongoDriver = null
-  var connection: MongoConnection = null
+  var connection = new MongoDriver().connection(Seq("localhost"))
   var db: DefaultDB = null
   var groups: BSONCollection = null
 
   def withMongoConnection[T](body: => T): Try[T] = {
     Try{
       if(groups == null){
-        driver = new MongoDriver(context.system)
-        connection = driver.connection(Seq("localhost"))
         db = connection.db(db_name)
-        groups = db.collection[BSONCollection](collection_name)
-        groups.indexesManager.ensure(Index(List(("name", Ascending)), unique = true))
       }
+      groups = db.collection[BSONCollection](collection_name)
+      groups.indexesManager.ensure(Index(List(("name", Ascending)), unique = true))
 
       body
     }
@@ -51,7 +48,7 @@ class GroupMongoPersistence (db_name: String, collection_name: String) extends G
       val query = BSONDocument("id" -> id)
       Await.result(groups.find(query).one[Group], 5.seconds)
     } match {
-      case Success(user) => user
+      case Success(group) => group
       case Failure(_) => None
     }
   }
