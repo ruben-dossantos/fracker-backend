@@ -1,19 +1,29 @@
 package models
 
-import akka.actor.{Actor, ActorLogging, Props, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import argonaut.Argonaut._
-import argonaut.{CodecJson, Json}
-import reactivemongo.bson.{BSONDocumentWriter, BSONDocument, BSONDocumentReader}
+import argonaut.{DecodeJson, EncodeJson, Json}
+import persistence.GroupPersistence.{FindGroup, CreateGroup}
+import reactivemongo.bson.{BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONObjectID}
+import utils.Helpers.{POST, verify_id}
+import utils.ActorUtils._
 
 /**
  * Created by ruben on 10-11-2014.
  *
  */
-case class Group(id: Int, name: String, password: String, users: List[String])
+case class Group(_id: Option[BSONObjectID], name: String, password: String, users: List[String])
 
 object Group {
 
-  implicit def GroupCodecJson: CodecJson[Group] = casecodec4(Group.apply, Group.unapply)("id", "name", "password", "users")
+  implicit def GroupEncodeJson: EncodeJson[Group] = EncodeJson( (g: Group) => ("_id" := g._id.get.toString()) ->: ("name" := g.name) ->: ("password" := g.password) ->: ("users" := g.users) ->: jEmptyObject)
+
+  implicit def GroupDecodeJson: DecodeJson[Group] = DecodeJson( g => for {
+    _id <- (g --\ "_id").as[Option[String]]
+    name <- (g --\ "name").as[String]
+    password <- (g --\ "password").as[String]
+    users <- (g --\ "users").as[List[String]]
+  } yield Group(verify_id(_id), name, password, users))
 
   def toJson(group: Group) = group.asJson
 
@@ -21,26 +31,26 @@ object Group {
 
   implicit object GroupReader extends BSONDocumentReader[Group] {
     def read(doc: BSONDocument): Group = {
-      val id = doc.getAs[Int]("id").get
+      val _id = doc.getAs[BSONObjectID]("_id").get
       val name = doc.getAs[String]("name").get
       val password = doc.getAs[String]("password").get
       val users = doc.getAs[List[String]]("users").get
-      Group(id, name, password, users)
+      Group(Some(_id), name, password, users)
     }
   }
 
   implicit object GroupWriter extends BSONDocumentWriter[Group]{
     def read(doc: BSONDocument): Group = {
-      val id = doc.getAs[Int]("id").get
+      val _id = doc.getAs[BSONObjectID]("_id").get
       val name = doc.getAs[String]("name").get
       val password = doc.getAs[String]("password").get
       val users = doc.getAs[List[String]]("users").get
-      Group(id, name, password, users)
+      Group(Some(_id), name, password, users)
     }
 
     override def write(g: Group) = {
       BSONDocument(
-        "id" -> g.id,
+        "id" -> g._id,
         "name" -> g.name,
         "password" -> g.password,
         "users" -> g.users
@@ -56,15 +66,27 @@ object GroupActor {
 class GroupActor(group: ActorRef) extends Actor with ActorLogging {
 
   def receive = {
-    case json: String => createGroup(json)
+    case post: POST => sender ! createGroup(post.json)
   }
 
   def createGroup(json: String): Json = {
     Group.parse(json) match {
-      case Right(new_group) => println(new_group)
-      case Left(error) => println("Error decoding group")
+      case Right(new_group) =>
+        println("at least was parsed " + new_group)
+        await[Boolean](group, FindGroup(new_group.name)) match {
+          case false =>
+            println("group does not exists")
+            await[Option[BSONObjectID]](group, CreateGroup(new_group)) match {
+              case Some(id) => Json("id" -> jString(id.stringify))
+              case None => Json("error" -> jString("Error creating group in the database"))
+            }
+          case true =>Json("error" -> jString("group with that name already exists"))
+        }
+
+      case Left(error) =>
+        println(error)
+        Json("error" -> jString("Error decoding json group"))
     }
-    Json()
   }
 
 }

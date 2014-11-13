@@ -6,7 +6,7 @@ import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.Ascending
 import reactivemongo.api.{DefaultDB, MongoDriver}
-import reactivemongo.bson.BSONDocument
+import reactivemongo.bson.{BSONObjectID, BSONDocument}
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -27,28 +27,42 @@ class GroupMongoPersistence (db_name: String, collection_name: String) extends G
 
   var connection = new MongoDriver().connection(Seq("localhost"))
   var db: DefaultDB = null
-  var groups: BSONCollection = null
+  var groups = db.collection[BSONCollection](collection_name)
+
 
   def withMongoConnection[T](body: => T): Try[T] = {
     Try{
+      println("cenas")
       if(groups == null){
+        println("1")
+        connection = MongoDriver().connection(Seq("localhost"))
+        println("2")
         db = connection.db(db_name)
+        println("3")
+        groups = db.collection[BSONCollection](collection_name)
+        println("4")
+        groups.indexesManager.ensure(Index(List(("name", Ascending)), unique = true))
+        println("5")
       }
-      groups = db.collection[BSONCollection](collection_name)
-      groups.indexesManager.ensure(Index(List(("name", Ascending)), unique = true))
 
       body
     }
   }
 
-  override def createGroup(group: Group): Option[Int] = ???
-
-  override def readGroup(id: Int): Option[Group] = {
+  override def createGroup(group: Group): Option[BSONObjectID] = {
+    val new_group = Group(Some(BSONObjectID.generate), group.name, group.password, group.users)
     withMongoConnection {
-      val query = BSONDocument("id" -> id)
-      Await.result(groups.find(query).one[Group], 5.seconds)
+      Await.result(
+        groups.insert(new_group).map {
+          lastError =>
+            lastError.ok match {
+              case true => new_group._id
+              case false => throw new Exception(lastError)
+            }
+        }, 5.seconds
+      )
     } match {
-      case Success(group) => group
+      case Success(id) => id //TODO whats new_user
       case Failure(_) => None
     }
   }
@@ -62,5 +76,22 @@ class GroupMongoPersistence (db_name: String, collection_name: String) extends G
     }
   }
 
-  override def updateGroup(group: Group): Boolean = ???
+  override def updateGroup(id: String, group: Group): Boolean = ???
+
+  override def readGroup(id: Int): Option[Group] = ???
+
+  override def findGroup(name: String): Boolean = {
+    println("HIHI")
+    withMongoConnection {
+      val query = BSONDocument("name" -> name)
+      Await.result(groups.find(query).one[Group], 5.seconds)
+    } match {
+      case Success(group) =>
+        group match {
+          case Some(_) => true
+          case None => false
+        }
+      case Failure(_) => false
+    }
+  }
 }

@@ -1,7 +1,7 @@
 package persistence
 
 import akka.actor.{ActorLogging, Props}
-import models.User
+import models.{Users, User}
 import reactivemongo.api.MongoDriver
 import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.api.indexes.Index
@@ -69,7 +69,7 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
     }
   }
 
-  override def updateUser(id: Int, user: User): Boolean = ???
+  override def updateUser(id: String, user: User): Boolean = ???
 
   override def readUser(id: Int): Option[User] = {
     withMongoConnection {
@@ -78,6 +78,16 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
     } match {
       case Success(user) => user
       case Failure(_) => None
+    }
+  }
+
+  override def readUsers(name: Option[String]) : Users = {
+    withMongoConnection {
+      val query = BSONDocument()
+      Await.result(users.find(query).cursor[User].collect[List](), 5.seconds)
+    } match {
+      case Success(user) => Users(user)
+      case Failure(_) => Users(List())
     }
   }
 

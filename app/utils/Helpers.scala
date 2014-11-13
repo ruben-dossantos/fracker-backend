@@ -12,7 +12,7 @@ object Helpers {
 
   case class GET(id: Int)
 
-  case class GETS()
+  case class GETS(name: Option[String], username: Option[String])
 
   case class PUT(id: Int, json: String)
 

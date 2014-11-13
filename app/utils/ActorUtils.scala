@@ -9,7 +9,7 @@ import scala.concurrent.{Await, Future}
 
 object ActorUtils {
 
-  val time = 10
+  val time = 5
 
   def awaitf[T](action: Future[T], wait: Int = time): T = {
     implicit val timeout = Timeout(wait.seconds)

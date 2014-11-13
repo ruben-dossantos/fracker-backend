@@ -7,7 +7,7 @@ import models.{GroupActor, UserActor}
 import persistence.{GroupMongoPersistence, UserMongoPersistence}
 import play.api.mvc._
 import utils.ActorUtils._
-import utils.Helpers.POST
+import utils.Helpers.{GETS, POST}
 
 object Application extends Controller {
 
@@ -17,15 +17,16 @@ object Application extends Controller {
   val user = system.actorOf(UserMongoPersistence.props(), name="UserActor")
   val group = system.actorOf(GroupMongoPersistence.props(), name="GroupActor")
 
-  val mUser = system.actorOf(UserActor.props(user))
-  val mGroup = system.actorOf(GroupActor.props(group))
+  val mUser = system.actorOf(UserActor.props(user), name = "UserModelActor")
+  val mGroup = system.actorOf(GroupActor.props(group), name = "GroupModelActor")
 
   def index = Action {
     Ok(views.html.index("Your new application is ready."))
   }
 
   def getUsers = Action {
-    Ok("{'name': 'ruben', password: '30vinte'}").as("application/json")
+    val answer = await[Json](mUser, GETS(None, None))
+    Ok(answer.toString()).as("application/json")
   }
 
   def createUser = Action { request =>
@@ -37,11 +38,11 @@ object Application extends Controller {
   }
 
   def createGroup = Action { request =>
-    request.body.asText match {
-      case Some(json) => mGroup ! json
-      case None => println("No data to parse")
+    val answer = request.body.asText match {
+      case Some(json) => await[Json](mGroup, POST(json))
+      case None => Json("error" -> jString("No data to parse"))
     }
-    Ok("cenas").as("application/json")
+    Ok(answer.toString()).as("application/json")
   }
 
 }

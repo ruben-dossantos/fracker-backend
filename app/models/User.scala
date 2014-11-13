@@ -2,11 +2,11 @@ package models
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import argonaut.Argonaut._
-import argonaut.{DecodeJson, EncodeJson, Json}
-import persistence.UserPersistence.{CreateUser, FindUser}
+import argonaut.{CodecJson, DecodeJson, EncodeJson, Json}
+import persistence.UserPersistence.{ReadUsers, CreateUser, FindUser}
 import reactivemongo.bson.{BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONObjectID}
 import utils.ActorUtils._
-import utils.Helpers.{POST, verify_id}
+import utils.Helpers.{GETS, POST, verify_id}
 
 /**
  * Created by ruben on 10-11-2014.
@@ -15,13 +15,18 @@ import utils.Helpers.{POST, verify_id}
 
 case class User (_id: Option[BSONObjectID], username: String, first_name: String, last_name: String, password: String, lat: String, lon: String, timestamp: Long) //groups: List[String/url]
 
+case class Users(users: List[User]) {
+  implicit def UsersCodecJson: CodecJson[Users] = casecodec1(Users.apply, Users.unapply)("users")
+
+  def toJson = this.users.asJson
+}
+
 object User {
 
-  //implicit def UserCodecJson: CodecJson[User] = casecodec8(User.apply, User.unapply)("id", "username", "first_name", "last_name", "password", "lat", "lon", "timestamp")
   //TODO: take password out
-  implicit def UserEncodeJson = EncodeJson( (u: User) => ("_id" := u._id.get.toString()) ->: ("username" := u.username) ->: ("first_name" := u.first_name) ->: ("last_name" := u.last_name) ->: ("password" := u.password) ->: ("lat" := u.lat) ->: ("lon" := u.lon) ->: ("timestamp" := u.timestamp) ->: jEmptyObject)
+  implicit def UserEncodeJson: EncodeJson[User] = EncodeJson( (u: User) => ("_id" := u._id.get.stringify) ->: ("username" := u.username) ->: ("first_name" := u.first_name) ->: ("last_name" := u.last_name) ->: ("password" := u.password) ->: ("lat" := u.lat) ->: ("lon" := u.lon) ->: ("timestamp" := u.timestamp) ->: jEmptyObject)
 
-  implicit def UserDecodeJson = DecodeJson( u => for {
+  implicit def UserDecodeJson: DecodeJson[User] = DecodeJson( u => for {
     _id <- (u --\ "_id").as[Option[String]]
     username <- (u --\ "username").as[String]
     first_name <- (u --\ "first_name").as[String]
@@ -31,6 +36,8 @@ object User {
     lon <- (u --\ "lon").as[String]
     timestamp <- (u --\ "timestamp").as[Long]
   } yield User(verify_id(_id), username, first_name, last_name, password, lat, lon, timestamp))
+
+
 
   def toJson(user: User) = user.asJson
 
@@ -65,7 +72,7 @@ object User {
 
     override def write(u: User) = {
       BSONDocument(
-        "id" -> u._id,
+        "_id" -> u._id,
         "username" -> u.username,
         "first_name" -> u.first_name,
         "last_name" -> u.last_name,
@@ -86,6 +93,7 @@ class UserActor(user: ActorRef) extends Actor with ActorLogging{
 
   def receive = {
     case post: POST => sender ! createUser(post.json)
+    case g: GETS => sender ! getUsers(g.username)
   }
 
   def createUser(json: String): Json = {
@@ -94,14 +102,16 @@ class UserActor(user: ActorRef) extends Actor with ActorLogging{
         await[Boolean](user, FindUser(new_user.username)) match {
           case false =>
             await[Option[BSONObjectID]](user, CreateUser(new_user)) match {
-              case Some(id) => Json("id" -> jString(id.stringify))
+              case Some(id) => Json("_id" -> jString(id.stringify))
               case None => Json("error" -> jString("Error creating user in the database"))
             }
-          case true =>Json("error" -> jString("user with that username already exists"))
+          case true => Json("error" -> jString("user with that username already exists"))
         }
 
       case Left(error) => Json("error" -> jString("Error decoding json user"))
     }
   }
+
+  def getUsers(username: Option[String]): Json = await[Users](user, ReadUsers(username)).toJson
 
 }
