@@ -1,9 +1,13 @@
 package controllers
 
 import akka.actor.ActorSystem
+import argonaut.Argonaut._
+import argonaut.Json
 import models.{GroupActor, UserActor}
 import persistence.{GroupMongoPersistence, UserMongoPersistence}
 import play.api.mvc._
+import utils.ActorUtils._
+import utils.Helpers.POST
 
 object Application extends Controller {
 
@@ -25,11 +29,11 @@ object Application extends Controller {
   }
 
   def createUser = Action { request =>
-    request.body.asText match {
-      case Some(json) => mUser ! json
-      case None => println("No data to parse")
+    val answer = request.body.asText match {
+      case Some(json) => await[Json](mUser, POST(json))
+      case None => Json("error" -> jString("No data to parse"))
     }
-    Ok("{ 'id': 37 }").as("application/json")
+    Ok(answer.toString()).as("application/json")
   }
 
   def createGroup = Action { request =>

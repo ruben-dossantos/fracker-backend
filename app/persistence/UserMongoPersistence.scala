@@ -2,16 +2,16 @@ package persistence
 
 import akka.actor.{ActorLogging, Props}
 import models.User
+import reactivemongo.api.MongoDriver
 import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.Ascending
-import reactivemongo.api.{DefaultDB, MongoConnection, MongoDriver}
-import reactivemongo.bson.BSONDocument
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
 
 import scala.concurrent.Await
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by ruben on 11-11-2014.
@@ -25,18 +25,16 @@ object UserMongoPersistence {
 
 class UserMongoPersistence (db_name: String, collection_name: String) extends UserPersistence with ActorLogging{
 
-  var driver: MongoDriver = null
-  var connection: MongoConnection = null
-  var db: DefaultDB = null
-  var users: BSONCollection = null
+  var connection = MongoDriver().connection(Seq("localhost"))
+  var db = connection.db(db_name)
+  var users = db.collection[BSONCollection](collection_name)
 
   def withMongoConnection[T](body: => T): Try[T] = {
     Try{
       if(users == null){
-        driver = new MongoDriver(context.system)
-        connection = driver.connection(Seq("localhost"))
+        connection = MongoDriver().connection(Seq("localhost"))
         db = connection.db(db_name)
-        users = db.collection[BSONCollection](collection_name)
+        users.indexesManager.ensure(Index(List(("_id", Ascending)), unique = true))
         users.indexesManager.ensure(Index(List(("name", Ascending)), unique = true))
       }
 
@@ -44,24 +42,20 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
     }
   }
 
-  override def createUser(user: User): Option[Int] = {
+  override def createUser(user: User): Option[BSONObjectID] = {
+    val new_user = User(Some(BSONObjectID.generate), user.username, user.first_name, user.last_name, user.password, user.lat, user.lon, user.timestamp)
     withMongoConnection {
       Await.result(
-        users.update(
-          BSONDocument("username" -> user.username),
-          user,
-          upsert = true
-        ).map {
+        users.insert(new_user).map {
           lastError =>
             lastError.ok match {
-              case true => user.id
+              case true => new_user._id
               case false => throw new Exception(lastError)
             }
         }, 5.seconds
       )
     } match {
-      case Success(id) => //TODO whats new_user
-        Some(id)
+      case Success(id) => id //TODO whats new_user
       case Failure(_) => None
     }
   }
@@ -75,7 +69,7 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
     }
   }
 
-  override def updateUser(user: User): Boolean = ???
+  override def updateUser(id: Int, user: User): Boolean = ???
 
   override def readUser(id: Int): Option[User] = {
     withMongoConnection {
@@ -84,6 +78,20 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
     } match {
       case Success(user) => user
       case Failure(_) => None
+    }
+  }
+
+  override def findUser(username: String): Boolean = {
+    withMongoConnection {
+      val query = BSONDocument("username" -> username)
+      Await.result(users.find(query).one[User], 5.seconds)
+    } match {
+      case Success(user) =>
+        user match {
+          case Some(_) => true
+          case None => false
+        }
+      case Failure(_) => false
     }
   }
 }
