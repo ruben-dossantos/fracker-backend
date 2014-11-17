@@ -72,7 +72,15 @@ class GroupMongoPersistence (db_name: String, collection_name: String) extends G
 
   override def updateGroup(id: String, group: Group): Boolean = ???
 
-  override def readGroup(id: Int): Option[Group] = ???
+  override def readGroup(id: String): Option[Group] = {
+    withMongoConnection {
+      val query = BSONDocument("_id" -> BSONObjectID(id))
+      Await.result(groups.find(query).one[Group], 5.seconds)
+    } match {
+      case Success(group) => group
+      case Failure(_) => None
+    }
+  }
 
   override def readGroups(username: Option[String]): Groups = {
     withMongoConnection {

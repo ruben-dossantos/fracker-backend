@@ -43,7 +43,7 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
   }
 
   override def createUser(user: User): Option[BSONObjectID] = {
-    val new_user = User(Some(BSONObjectID.generate), user.username, user.first_name, user.last_name, user.password, user.lat, user.lon, user.timestamp)
+    val new_user = User(Some(BSONObjectID.generate), user.username, user.first_name, user.last_name, user.password, user.lat, user.lon, user.timestamp, user.groups)
     withMongoConnection {
       Await.result(
         users.insert(new_user).map {
@@ -71,9 +71,9 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
 
   override def updateUser(id: String, user: User): Boolean = ???
 
-  override def readUser(id: Int): Option[User] = {
+  override def readUser(id: String): Option[User] = {
     withMongoConnection {
-      val query = BSONDocument("id" -> id)
+      val query = BSONDocument("_id" -> BSONObjectID(id))
       Await.result(users.find(query).one[User], 5.seconds)
     } match {
       case Success(user) => user

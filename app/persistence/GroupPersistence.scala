@@ -13,7 +13,7 @@ object GroupPersistence {
 
   case class CreateGroup(group: Group)
 
-  case class ReadGroup(id: Int)
+  case class ReadGroup(id: String)
 
   case class ReadGroups(username: Option[String])
 
@@ -40,7 +40,7 @@ abstract class GroupPersistence extends Actor{
 
   def createGroup(group: Group): Option[BSONObjectID]
 
-  def readGroup(id: Int): Option[Group]
+  def readGroup(id: String): Option[Group]
 
   def updateGroup(id: String, group: Group): Boolean
 

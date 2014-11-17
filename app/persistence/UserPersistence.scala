@@ -14,7 +14,7 @@ object UserPersistence {
 
   case class CreateUser(user: User)
 
-  case class ReadUser(id: Int)
+  case class ReadUser(id: String)
 
   case class ReadUsers(name: Option[String])
 
@@ -41,7 +41,7 @@ abstract class UserPersistence extends Actor {
 
   def createUser(user: User): Option[BSONObjectID]
 
-  def readUser(id: Int): Option[User]
+  def readUser(id: String): Option[User]
 
   def updateUser(id: String, user: User): Boolean
 

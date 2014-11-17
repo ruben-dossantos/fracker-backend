@@ -7,7 +7,7 @@ import models.{GroupActor, UserActor}
 import persistence.{GroupMongoPersistence, UserMongoPersistence}
 import play.api.mvc._
 import utils.ActorUtils._
-import utils.Helpers.{DELETE, GETS, POST}
+import utils.Helpers.{GET, DELETE, GETS, POST}
 
 object Application extends Controller {
 
@@ -22,6 +22,11 @@ object Application extends Controller {
 
   def index = Action {
     Ok(views.html.index("Your new application is ready."))
+  }
+
+  def getUser(id: String) = Action {
+    val answer = await[Json](mUser, GET(id))
+    Ok(answer.toString()).as("application/json")
   }
 
   def getUsers = Action {
@@ -46,6 +51,11 @@ object Application extends Controller {
       case true => Status(200)("User deleted successfully")
       case false => Status(503)("Failed to delete user")    // 500?
     }
+  }
+
+  def getGroup(id: String) = Action {
+    val answer = await[Json](mGroup, GET(id))
+    Ok(answer.toString()).as("application/json")
   }
 
   def getGroups = Action {  //TODO: POST must come with user !!_id!! or token

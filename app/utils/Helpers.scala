@@ -10,11 +10,11 @@ object Helpers {
 
   case class POST(json: String)
 
-  case class GET(id: Int)
+  case class GET(id: String)
 
   case class GETS(name: Option[String], username: Option[String])
 
-  case class PUT(id: Int, json: String)
+  case class PUT(id: String, json: String)
 
   case class DELETE(id: String)
 
