@@ -9,6 +9,8 @@ import play.api.mvc._
 import utils.ActorUtils._
 import utils.Helpers.{GET, DELETE, GETS, POST}
 
+import scala.util.{Failure, Success, Try}
+
 object Application extends Controller {
 
   implicit var system: ActorSystem = null
@@ -37,8 +39,12 @@ object Application extends Controller {
   def createUser = Action { request =>
     request.body.asText match {
       case Some(json) =>
-        val answer = await[Json](mUser, POST(json)) // TODO: decode user response to return better message codes --- change Json to Try[Json]??
-        Status(201)(answer.toString())
+        // TODO: decode user response to return better message codes --- change Json to Try[Json]??
+        await[Try[Json]](mUser, POST(json)) match {
+          case Success(idJson) => Status(201)(idJson.toString())
+          case Failure(e) => Status(500)(e.getMessage)
+        }
+
       case None =>
         val answer = Json("error" -> jString("No data to parse"))
         Status(406)(answer.toString())

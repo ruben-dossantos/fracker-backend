@@ -7,13 +7,14 @@ import persistence.UserPersistence._
 import reactivemongo.bson.{BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONObjectID}
 import utils.ActorUtils._
 import utils.Helpers._
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by ruben on 10-11-2014.
  *
  */
 
-case class User (_id: Option[BSONObjectID], username: String, first_name: String, last_name: String, password: String, lat: String, lon: String, timestamp: Long, groups: List[Group])
+case class User (_id: Option[BSONObjectID], username: String, first_name: String, last_name: String, password: String, lat: String, lon: String, timestamp: Long, groups: List[String]) //groups: List[String/url]
 
 case class Users(users: List[User]) {
   implicit def UsersCodecJson: CodecJson[Users] = casecodec1(Users.apply, Users.unapply)("users")
@@ -23,8 +24,8 @@ case class Users(users: List[User]) {
 
 object User {
 
-  //TODO: take password out
-  implicit def UserEncodeJson: EncodeJson[User] = EncodeJson( (u: User) => ("_id" := u._id.get.stringify) ->: ("username" := u.username) ->: ("first_name" := u.first_name) ->: ("last_name" := u.last_name) ->: ("password" := u.password) ->: ("lat" := u.lat) ->: ("lon" := u.lon) ->: ("timestamp" := u.timestamp) ->: ("groups" := u.groups) ->: jEmptyObject)
+  //TODO: map { group => search in database to encode
+  implicit def UserEncodeJson: EncodeJson[User] = EncodeJson( (u: User) => ("_id" := u._id.get.stringify) ->: ("username" := u.username) ->: ("first_name" := u.first_name) ->: ("last_name" := u.last_name) ->: ("lat" := u.lat) ->: ("lon" := u.lon) ->: ("timestamp" := u.timestamp) ->: ("groups" := u.groups) ->: jEmptyObject)
 
   implicit def UserDecodeJson: DecodeJson[User] = DecodeJson( u => for {
     _id <- (u --\ "_id").as[Option[String]]
@@ -35,10 +36,8 @@ object User {
     lat <- (u --\ "lat").as[String]
     lon <- (u --\ "lon").as[String]
     timestamp <- (u --\ "timestamp").as[Long]
-    groups <- (u --\ "groups").as[List[Group]]
+    groups <- (u --\ "groups").as[List[String]]
   } yield User(verify_id(_id), username, first_name, last_name, password, lat, lon, timestamp, groups))
-
-
 
   def toJson(user: User) = user.asJson
 
@@ -54,7 +53,7 @@ object User {
       val lat = doc.getAs[String]("lat").get
       val lon = doc.getAs[String]("lon").get
       val timestamp = doc.getAs[Long]("timestamp").get
-      val groups = doc.getAs[List[Group]] ("groups").get
+      val groups = doc.getAs[List[String]]("groups").get
       User(Some(_id), username, first_name, last_name, password, lat, lon, timestamp, groups)
     }
   }
@@ -69,7 +68,7 @@ object User {
       val lat = doc.getAs[String]("lat").get
       val lon = doc.getAs[String]("lon").get
       val timestamp = doc.getAs[Long]("timestamp").get
-      val groups = doc.getAs[List[Group]] ("groups").get
+      val groups = doc.getAs[List[String]]("groups").get
       User(Some(_id), username, first_name, last_name, password, lat, lon, timestamp, groups)
     }
 
@@ -102,21 +101,18 @@ class UserActor(user: ActorRef) extends Actor with ActorLogging{
     case d: DELETE => sender ! deleteUser(d.id)
   }
 
-  def createUser(json: String): Json = {
+  def createUser(json: String): Try[Json] = {
     User.parse(json) match {
       case Right(new_user) =>
-        println("await find")
         await[Boolean](user, FindUser(new_user.username)) match {
           case false =>
-            println("await create")
             await[Option[BSONObjectID]](user, CreateUser(new_user)) match {
-              case Some(id) => Json("_id" -> jString(id.stringify))
-              case None => Json("error" -> jString("Error creating user in the database"))
+              case Some(id) => Success(Json("_id" -> jString(id.stringify)))
+              case None => Failure(new Throwable(Json("error" -> jString("Error creating user in the database")).toString()))
             }
-          case true => Json("error" -> jString("user with that username already exists"))
+          case true => Failure(new Throwable(Json("error" -> jString("user with that username already exists")).toString()))
         }
-
-      case Left(error) => Json("error" -> jString("Error decoding json user"))
+      case Left(error) => Failure(new Throwable(Json("error" -> jString("Error decoding json user")).toString()))
     }
   }
 
