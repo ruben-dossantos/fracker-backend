@@ -20,7 +20,35 @@ case class Groups(groups: List[Group]) {
   def toJson = this.groups.asJson
 }
 
+case class GroupMinified(_id: Option[BSONObjectID], name: String){
+
+  //implicit def GroupMinifiedCodecJson: CodecJson[GroupMinified] = casecodec2(GroupMinified.apply, GroupMinified.unapply)("_id", "name")
+
+  def toJson = this.asJson
+}
+
+object GroupMinified {
+  implicit def GroupMinifiedEncodeJson: EncodeJson[GroupMinified] = EncodeJson( (g: GroupMinified) => ("_id" := g._id.get.toString()) ->: ("name" := g.name) ->: jEmptyObject)
+
+  implicit def GroupMinifiedDecodeJson: DecodeJson[GroupMinified] = DecodeJson( g => for {
+    _id <- (g --\ "_id").as[Option[String]]
+    name <- (g --\ "name").as[String]
+  } yield GroupMinified(verify_id(_id), name))
+}
+
+case class GroupsMinified(groups: List[GroupMinified]) {
+  implicit def GroupsMinifiedCodecJson: CodecJson[GroupsMinified] = casecodec1(GroupsMinified.apply, GroupsMinified.unapply)("groups")
+
+  def toJson = this.groups.asJson
+}
+
 object Group {
+
+  def minify(groups: List[Group]): Json = {
+    GroupsMinified(groups map { group =>
+      GroupMinified(group._id, group.name)
+    }).toJson
+  }
 
   implicit def GroupEncodeJson: EncodeJson[Group] = EncodeJson( (g: Group) => ("_id" := g._id.get.toString()) ->: ("name" := g.name) ->: ("password" := g.password) ->: ("users" := g.users) ->: jEmptyObject)
 

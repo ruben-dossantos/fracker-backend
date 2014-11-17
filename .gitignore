@@ -14,3 +14,5 @@ dist
 /RUNNING_PID
 /.settings
 projectFilesBackup
+project/
+activator-sbt-echo-akka-shim.sbt

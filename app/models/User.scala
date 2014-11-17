@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
  *
  */
 
-case class User (_id: Option[BSONObjectID], username: String, first_name: String, last_name: String, password: String, lat: String, lon: String, timestamp: Long, groups: List[String]) //groups: List[String/url]
+case class User (_id: Option[BSONObjectID], username: String, first_name: String, last_name: String, password: String, lat: String, lon: String, timestamp: Long, groups: List[Group]) //groups: List[String/url]
 
 case class Users(users: List[User]) {
   implicit def UsersCodecJson: CodecJson[Users] = casecodec1(Users.apply, Users.unapply)("users")
@@ -25,7 +25,8 @@ case class Users(users: List[User]) {
 object User {
 
   //TODO: map { group => search in database to encode
-  implicit def UserEncodeJson: EncodeJson[User] = EncodeJson( (u: User) => ("_id" := u._id.get.stringify) ->: ("username" := u.username) ->: ("first_name" := u.first_name) ->: ("last_name" := u.last_name) ->: ("lat" := u.lat) ->: ("lon" := u.lon) ->: ("timestamp" := u.timestamp) ->: ("groups" := u.groups) ->: jEmptyObject)
+  implicit def UserEncodeJson: EncodeJson[User] = EncodeJson( (u: User) => ("_id" := u._id.get.stringify) ->: ("username" := u.username) ->: ("first_name" := u.first_name) ->: ("last_name" := u.last_name) ->: ("lat" := u.lat) ->: ("lon" := u.lon) ->: ("timestamp" := u.timestamp)
+    ->: ("groups" := Group.minify(u.groups)) ->: jEmptyObject)
 
   implicit def UserDecodeJson: DecodeJson[User] = DecodeJson( u => for {
     _id <- (u --\ "_id").as[Option[String]]
@@ -36,7 +37,7 @@ object User {
     lat <- (u --\ "lat").as[String]
     lon <- (u --\ "lon").as[String]
     timestamp <- (u --\ "timestamp").as[Long]
-    groups <- (u --\ "groups").as[List[String]]
+    groups <- (u --\ "groups").as[List[Group]]
   } yield User(verify_id(_id), username, first_name, last_name, password, lat, lon, timestamp, groups))
 
   def toJson(user: User) = user.asJson
@@ -53,7 +54,7 @@ object User {
       val lat = doc.getAs[String]("lat").get
       val lon = doc.getAs[String]("lon").get
       val timestamp = doc.getAs[Long]("timestamp").get
-      val groups = doc.getAs[List[String]]("groups").get
+      val groups = doc.getAs[List[Group]]("groups").get
       User(Some(_id), username, first_name, last_name, password, lat, lon, timestamp, groups)
     }
   }
@@ -68,7 +69,7 @@ object User {
       val lat = doc.getAs[String]("lat").get
       val lon = doc.getAs[String]("lon").get
       val timestamp = doc.getAs[Long]("timestamp").get
-      val groups = doc.getAs[List[String]]("groups").get
+      val groups = doc.getAs[List[Group]]("groups").get
       User(Some(_id), username, first_name, last_name, password, lat, lon, timestamp, groups)
     }
 

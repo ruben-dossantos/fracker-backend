@@ -39,7 +39,6 @@ object Application extends Controller {
   def createUser = Action { request =>
     request.body.asText match {
       case Some(json) =>
-        // TODO: decode user response to return better message codes --- change Json to Try[Json]??
         await[Try[Json]](mUser, POST(json)) match {
           case Success(idJson) => Status(201)(idJson.toString())
           case Failure(e) => Status(500)(e.getMessage)
