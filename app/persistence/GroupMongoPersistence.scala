@@ -1,12 +1,12 @@
 package persistence
 
 import akka.actor.{ActorLogging, Props}
-import models.Group
+import models.{Groups, Group}
+import reactivemongo.api.MongoDriver
 import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.Ascending
-import reactivemongo.api.{DefaultDB, MongoDriver}
-import reactivemongo.bson.{BSONObjectID, BSONDocument}
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -25,24 +25,18 @@ object GroupMongoPersistence {
 
 class GroupMongoPersistence (db_name: String, collection_name: String) extends GroupPersistence with ActorLogging{
 
-  var connection = new MongoDriver().connection(Seq("localhost"))
-  var db: DefaultDB = null
+  var connection = MongoDriver().connection(Seq("localhost"))
+  var db = connection.db(db_name)
   var groups = db.collection[BSONCollection](collection_name)
 
 
   def withMongoConnection[T](body: => T): Try[T] = {
     Try{
-      println("cenas")
       if(groups == null){
-        println("1")
         connection = MongoDriver().connection(Seq("localhost"))
-        println("2")
         db = connection.db(db_name)
-        println("3")
-        groups = db.collection[BSONCollection](collection_name)
-        println("4")
+        groups.indexesManager.ensure(Index(List(("_id", Ascending)), unique = true))
         groups.indexesManager.ensure(Index(List(("name", Ascending)), unique = true))
-        println("5")
       }
 
       body
@@ -80,8 +74,17 @@ class GroupMongoPersistence (db_name: String, collection_name: String) extends G
 
   override def readGroup(id: Int): Option[Group] = ???
 
+  override def readGroups(username: Option[String]): Groups = {
+    withMongoConnection {
+      val query = BSONDocument()
+      Await.result(groups.find(query).cursor[Group].collect[List](), 5.seconds)
+    } match {
+      case Success(group) => Groups(group)
+      case Failure(_) => Groups(List())
+    }
+  }
+
   override def findGroup(name: String): Boolean = {
-    println("HIHI")
     withMongoConnection {
       val query = BSONDocument("name" -> name)
       Await.result(groups.find(query).one[Group], 5.seconds)

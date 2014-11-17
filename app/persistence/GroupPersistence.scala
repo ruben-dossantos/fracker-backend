@@ -1,7 +1,7 @@
 package persistence
 
 import akka.actor.Actor
-import models.Group
+import models.{Groups, Group}
 import persistence.GroupPersistence._
 import reactivemongo.bson.BSONObjectID
 
@@ -15,7 +15,7 @@ object GroupPersistence {
 
   case class ReadGroup(id: Int)
 
-  case class ReadGroups()
+  case class ReadGroups(username: Option[String])
 
   case class UpdateGroup(id: String, group: Group)
 
@@ -29,14 +29,14 @@ abstract class GroupPersistence extends Actor{
 
   def receive = {
     case cg: CreateGroup => sender ! createGroup(cg.group)
-    case rgs: ReadGroups => sender ! readGroups
+    case rgs: ReadGroups => sender ! readGroups(rgs.username)
     case rg: ReadGroup => sender ! readGroup(rg.id)
     case ug: UpdateGroup => sender ! updateGroup(ug.id, ug.group)
     case dg: DeleteGroup => sender ! deleteGroup(dg.id)
     case fg: FindGroup => sender ! findGroup(fg.name)
   }
 
-  def readGroups: List[Group] = { List() }
+  def readGroups(username: Option[String]): Groups = { Groups(List()) }
 
   def createGroup(group: Group): Option[BSONObjectID]
 

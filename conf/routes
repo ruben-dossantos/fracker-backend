@@ -13,7 +13,7 @@ POST    /user                       controllers.Application.createUser
 #DELETE  /user/:id                   controllers.Application.deleteUser(id: Int)
 
 #Groups
-#GET     /group                      controllers.Application.getGroups
+GET     /group                      controllers.Application.getGroups
 #GET     /group/:id                  controllers.Application.getGroup(id: Int)
 POST    /group                      controllers.Application.createGroup
 #PUT     /group/:id                  controllers.Application.updateGroup(id: Int)

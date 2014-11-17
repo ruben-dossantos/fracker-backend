@@ -37,6 +37,11 @@ object Application extends Controller {
     Ok(answer.toString()).as("application/json")
   }
 
+  def getGroups = Action {  //TODO: POST must come with user !!_id!! or token
+    val answer = await[Json](mGroup, GETS(None, None))
+    Ok(answer.toString()).as("application/json")
+  }
+
   def createGroup = Action { request =>
     val answer = request.body.asText match {
       case Some(json) => await[Json](mGroup, POST(json))

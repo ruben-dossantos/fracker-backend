@@ -2,10 +2,10 @@ package models
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import argonaut.Argonaut._
-import argonaut.{DecodeJson, EncodeJson, Json}
-import persistence.GroupPersistence.{FindGroup, CreateGroup}
+import argonaut.{CodecJson, DecodeJson, EncodeJson, Json}
+import persistence.GroupPersistence.{ReadGroups, FindGroup, CreateGroup}
 import reactivemongo.bson.{BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONObjectID}
-import utils.Helpers.{POST, verify_id}
+import utils.Helpers.{GETS, POST, verify_id}
 import utils.ActorUtils._
 
 /**
@@ -13,6 +13,12 @@ import utils.ActorUtils._
  *
  */
 case class Group(_id: Option[BSONObjectID], name: String, password: String, users: List[String])
+
+case class Groups(groups: List[Group]) {
+  implicit def GroupsCodecJson: CodecJson[Groups] = casecodec1(Groups.apply, Groups.unapply)("groups")
+
+  def toJson = this.groups.asJson
+}
 
 object Group {
 
@@ -67,26 +73,25 @@ class GroupActor(group: ActorRef) extends Actor with ActorLogging {
 
   def receive = {
     case post: POST => sender ! createGroup(post.json)
+    case g: GETS => sender ! getGroups(g.username)
   }
 
   def createGroup(json: String): Json = {
     Group.parse(json) match {
       case Right(new_group) =>
-        println("at least was parsed " + new_group)
         await[Boolean](group, FindGroup(new_group.name)) match {
           case false =>
-            println("group does not exists")
             await[Option[BSONObjectID]](group, CreateGroup(new_group)) match {
               case Some(id) => Json("id" -> jString(id.stringify))
               case None => Json("error" -> jString("Error creating group in the database"))
             }
-          case true =>Json("error" -> jString("group with that name already exists"))
+          case true => Json("error" -> jString("group with that name already exists"))
         }
 
-      case Left(error) =>
-        println(error)
-        Json("error" -> jString("Error decoding json group"))
+      case Left(error) => Json("error" -> jString("Error decoding json group"))
     }
   }
 
+
+  def getGroups(username: Option[String]): Json = await[Groups](group, ReadGroups(username)).toJson
 }
