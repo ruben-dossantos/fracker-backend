@@ -20,7 +20,7 @@ object UserPersistence {
 
   case class UpdateUser(id: String, user: User)
 
-  case class DeleteUser(id: Int)
+  case class DeleteUser(id: String)
 
   case class FindUser(username: String)
 
@@ -45,7 +45,7 @@ abstract class UserPersistence extends Actor {
 
   def updateUser(id: String, user: User): Boolean
 
-  def deleteUser(id: Int): Boolean
+  def deleteUser(id: String): Boolean
 
   def findUser(username: String): Boolean
 }

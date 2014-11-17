@@ -61,9 +61,9 @@ class GroupMongoPersistence (db_name: String, collection_name: String) extends G
     }
   }
 
-  override def deleteGroup(id: Int): Boolean = {
+  override def deleteGroup(id: String): Boolean = {
     withMongoConnection {
-      groups.remove(BSONDocument("id" -> id))
+      groups.remove(BSONDocument("_id" -> BSONObjectID(id)))
     } match {
       case Success(_) => true
       case Failure(_) => false

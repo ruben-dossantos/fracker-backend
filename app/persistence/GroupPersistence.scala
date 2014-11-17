@@ -19,7 +19,7 @@ object GroupPersistence {
 
   case class UpdateGroup(id: String, group: Group)
 
-  case class DeleteGroup(id: Int)
+  case class DeleteGroup(id: String)
 
   case class FindGroup(name: String)
 
@@ -44,7 +44,7 @@ abstract class GroupPersistence extends Actor{
 
   def updateGroup(id: String, group: Group): Boolean
 
-  def deleteGroup(id: Int): Boolean
+  def deleteGroup(id: String): Boolean
 
   def findGroup(name: String): Boolean
 

@@ -60,9 +60,9 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
     }
   }
 
-  override def deleteUser(id: Int): Boolean = {
+  override def deleteUser(id: String): Boolean = {
     withMongoConnection {
-      users.remove(BSONDocument("id" -> id))
+      users.remove(BSONDocument("_id" -> BSONObjectID(id)))
     } match {
       case Success(_) => true
       case Failure(_) => false

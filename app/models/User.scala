@@ -3,10 +3,10 @@ package models
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import argonaut.Argonaut._
 import argonaut.{CodecJson, DecodeJson, EncodeJson, Json}
-import persistence.UserPersistence.{ReadUsers, CreateUser, FindUser}
+import persistence.UserPersistence.{CreateUser, DeleteUser, FindUser, ReadUsers}
 import reactivemongo.bson.{BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONObjectID}
 import utils.ActorUtils._
-import utils.Helpers.{GETS, POST, verify_id}
+import utils.Helpers.{DELETE, GETS, POST, verify_id}
 
 /**
  * Created by ruben on 10-11-2014.
@@ -94,6 +94,7 @@ class UserActor(user: ActorRef) extends Actor with ActorLogging{
   def receive = {
     case post: POST => sender ! createUser(post.json)
     case g: GETS => sender ! getUsers(g.username)
+    case d: DELETE => sender ! deleteUser(d.id)
   }
 
   def createUser(json: String): Json = {
@@ -113,5 +114,8 @@ class UserActor(user: ActorRef) extends Actor with ActorLogging{
   }
 
   def getUsers(username: Option[String]): Json = await[Users](user, ReadUsers(username)).toJson
+
+  def deleteUser(id: String): Boolean = await[Boolean](user, DeleteUser(id))
+
 
 }

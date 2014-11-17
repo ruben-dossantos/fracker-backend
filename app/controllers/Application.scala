@@ -7,7 +7,7 @@ import models.{GroupActor, UserActor}
 import persistence.{GroupMongoPersistence, UserMongoPersistence}
 import play.api.mvc._
 import utils.ActorUtils._
-import utils.Helpers.{GETS, POST}
+import utils.Helpers.{DELETE, GETS, POST}
 
 object Application extends Controller {
 
@@ -30,11 +30,22 @@ object Application extends Controller {
   }
 
   def createUser = Action { request =>
-    val answer = request.body.asText match {
-      case Some(json) => await[Json](mUser, POST(json))
-      case None => Json("error" -> jString("No data to parse"))
+    request.body.asText match {
+      case Some(json) =>
+        val answer = await[Json](mUser, POST(json)) // TODO: decode user response to return better message codes --- change Json to Try[Json]??
+        Status(201)(answer.toString())
+      case None =>
+        val answer = Json("error" -> jString("No data to parse"))
+        Status(406)(answer.toString())
     }
-    Ok(answer.toString()).as("application/json")
+    //Ok(answer.toString()).as("application/json")
+  }
+
+  def deleteUser(id: String) = Action { request =>
+    await[Boolean](mUser, DELETE(id)) match {
+      case true => Status(200)("User deleted successfully")
+      case false => Status(503)("Failed to delete user")    // 500?
+    }
   }
 
   def getGroups = Action {  //TODO: POST must come with user !!_id!! or token
@@ -50,8 +61,15 @@ object Application extends Controller {
     Ok(answer.toString()).as("application/json")
   }
 
-  def getUserGroups(id: Int) = Action { request =>
-    Ok(Json("id" -> jNumber(id)).toString()).as("application/json")
+  def getUserGroups(id: String) = Action { request =>
+    Ok(Json("id" -> jString(id)).toString()).as("application/json")
+  }
+
+  def deleteGroup(id: String) = Action { request =>
+    await[Boolean](mGroup, DELETE(id)) match {
+      case true => Status(200)("Group deleted successfully")
+      case false => Status(503)("Failed to delete group")    // 500?
+    }
   }
 
 }

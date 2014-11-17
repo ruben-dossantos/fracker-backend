@@ -16,7 +16,7 @@ object Helpers {
 
   case class PUT(id: Int, json: String)
 
-  case class DELETE(id: Int)
+  case class DELETE(id: String)
 
   def verify_id(id: Option[String]):Option[BSONObjectID] = {
     id match {

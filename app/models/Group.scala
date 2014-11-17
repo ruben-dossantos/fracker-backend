@@ -3,9 +3,9 @@ package models
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import argonaut.Argonaut._
 import argonaut.{CodecJson, DecodeJson, EncodeJson, Json}
-import persistence.GroupPersistence.{ReadGroups, FindGroup, CreateGroup}
+import persistence.GroupPersistence.{DeleteGroup, ReadGroups, FindGroup, CreateGroup}
 import reactivemongo.bson.{BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONObjectID}
-import utils.Helpers.{GETS, POST, verify_id}
+import utils.Helpers.{DELETE, GETS, POST, verify_id}
 import utils.ActorUtils._
 
 /**
@@ -74,6 +74,7 @@ class GroupActor(group: ActorRef) extends Actor with ActorLogging {
   def receive = {
     case post: POST => sender ! createGroup(post.json)
     case g: GETS => sender ! getGroups(g.username)
+    case d: DELETE => sender ! deleteGroup(d.id)
   }
 
   def createGroup(json: String): Json = {
@@ -94,4 +95,6 @@ class GroupActor(group: ActorRef) extends Actor with ActorLogging {
 
 
   def getGroups(username: Option[String]): Json = await[Groups](group, ReadGroups(username)).toJson
+
+  def deleteGroup(id: String): Boolean = await[Boolean](group, DeleteGroup(id))
 }
