@@ -50,4 +50,8 @@ object Application extends Controller {
     Ok(answer.toString()).as("application/json")
   }
 
+  def getUserGroups(id: Int) = Action { request =>
+    Ok(Json("id" -> jNumber(id)).toString()).as("application/json")
+  }
+
 }

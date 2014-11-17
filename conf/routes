@@ -13,6 +13,7 @@ POST    /user                       controllers.Application.createUser
 #DELETE  /user/:id                   controllers.Application.deleteUser(id: Int)
 
 #Groups
+GET     /user/:id/groups            controllers.Application.getUserGroups(id:Int) #TODO: which of these: probably this one <-
 GET     /group                      controllers.Application.getGroups
 #GET     /group/:id                  controllers.Application.getGroup(id: Int)
 POST    /group                      controllers.Application.createGroup
