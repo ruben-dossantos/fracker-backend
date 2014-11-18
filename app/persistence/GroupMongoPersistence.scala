@@ -70,7 +70,21 @@ class GroupMongoPersistence (db_name: String, collection_name: String) extends G
     }
   }
 
-  override def updateGroup(id: String, group: Group): Boolean = ???
+  override def updateGroup(id: String, group: Group): Boolean = {
+    withMongoConnection {
+      Await.result(
+        groups.update(
+          BSONDocument("_id" -> BSONObjectID(id)),
+          group,
+          upsert = true
+        ).map {
+          lastError => lastError.ok
+        }, 5.seconds)
+    } match {
+      case Success(state) => state
+      case Failure(e) => false
+    }
+  }
 
   override def readGroup(id: String): Option[Group] = {
     withMongoConnection {

@@ -5,21 +5,49 @@
 # Home page
 GET     /                           controllers.Application.index
 
-# Users
+### Users
 GET     /user                       controllers.Application.getUsers
 GET     /user/:id                   controllers.Application.getUser(id: String)
-POST    /user                       controllers.Application.createUser
-#PUT     /user/:id                   controllers.Application.updateUser(id: Int)
+#POST    /user                       controllers.Application.createUser
+PUT     /user/:id                   controllers.Application.updateUser(id: String)
 DELETE  /user/:id                   controllers.Application.deleteUser(id: String)
 
-#Groups
-GET     /user/:id/groups            controllers.Application.getUserGroups(id: String)
+### Groups
+#GET     /user/:id/groups            controllers.Application.getUserGroups(id: String)
 #TODO: which of these: probably this one ^
-GET     /group                      controllers.Application.getGroups
-GET     /group/:id                  controllers.Application.getGroup(id: String)
-POST    /group                      controllers.Application.createGroup
-#PUT     /group/:id                  controllers.Application.updateGroup(id: Int)
+#GET     /group                      controllers.Application.getGroups
+#GET     /group/:id                  controllers.Application.getGroup(id: String)
+#POST    /group                      controllers.Application.createGroup
+PUT     /group/:id                  controllers.Application.updateGroup(id: String)
 DELETE  /group/:id                  controllers.Application.deleteGroup(id: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
+
+
+### Fracker
+
+## login
+## must return _id
+POST    /login                      controllers.Application.login
+## create user
+## can return 201 CREATED
+POST    /signup                     controllers.Application.createUser
+## read user's group
+## must return user's groups
+GET     /user/:id/group             controllers.Application.getUserGroups(id: String)
+## read friends locations
+## must return user's group info like a user list with locations
+GET     /user/:user/group/:group    controllers.Application.getGroup(user: String, group: String)
+## create group
+## must return group _id
+POST    /group                      controllers.Application.createGroup
+## update user with a new group
+## must return user's info
+PUT     /user/:id/group             controllers.Application.joinGroup(id: String)
+## delete group from user
+## must return ok?
+DELETE  /user/:user/group/:group    controllers.Application.abandonGroup(user: String, group: String)
+## read all groups to join
+## must return all groups
+GET     /group                      controllers.Application.getGroups

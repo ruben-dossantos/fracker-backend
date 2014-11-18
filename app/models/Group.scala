@@ -8,11 +8,13 @@ import reactivemongo.bson.{BSONDocument, BSONDocumentReader, BSONDocumentWriter,
 import utils.Helpers._
 import utils.ActorUtils._
 
+import scala.util.{Failure, Success, Try}
+
 /**
  * Created by ruben on 10-11-2014.
  *
  */
-case class Group(_id: Option[BSONObjectID], name: String, password: String, users: List[String])      // TODO: this needs to have more info without recursively take one another
+case class Group(_id: Option[BSONObjectID], name: String, password: String, users: List[User])      // TODO: this needs to have more info without recursively take one another
 
 case class Groups(groups: List[Group]) {
   implicit def GroupsCodecJson: CodecJson[Groups] = casecodec1(Groups.apply, Groups.unapply)("groups")
@@ -50,13 +52,14 @@ object Group {
     }).toJson
   }
 
-  implicit def GroupEncodeJson: EncodeJson[Group] = EncodeJson( (g: Group) => ("_id" := g._id.get.toString()) ->: ("name" := g.name) ->: ("password" := g.password) ->: ("users" := g.users) ->: jEmptyObject)
+  implicit def GroupEncodeJson: EncodeJson[Group] = EncodeJson( (g: Group) => ("_id" := g._id.get.toString()) ->: ("name" := g.name) ->: ("password" := g.password)
+    ->: ("users" := User.minify(g.users)) ->: jEmptyObject)
 
   implicit def GroupDecodeJson: DecodeJson[Group] = DecodeJson( g => for {
     _id <- (g --\ "_id").as[Option[String]]
     name <- (g --\ "name").as[String]
     password <- (g --\ "password").as[String]
-    users <- (g --\ "users").as[List[String]]
+    users <- (g --\ "users").as[List[User]]
   } yield Group(verify_id(_id), name, password, users))
 
   def toJson(group: Group) = group.asJson
@@ -68,7 +71,7 @@ object Group {
       val _id = doc.getAs[BSONObjectID]("_id").get
       val name = doc.getAs[String]("name").get
       val password = doc.getAs[String]("password").get
-      val users = doc.getAs[List[String]]("users").get
+      val users = doc.getAs[List[User]]("users").get
       Group(Some(_id), name, password, users)
     }
   }
@@ -78,7 +81,7 @@ object Group {
       val _id = doc.getAs[BSONObjectID]("_id").get
       val name = doc.getAs[String]("name").get
       val password = doc.getAs[String]("password").get
-      val users = doc.getAs[List[String]]("users").get
+      val users = doc.getAs[List[User]]("users").get
       Group(Some(_id), name, password, users)
     }
 
@@ -103,6 +106,7 @@ class GroupActor(group: ActorRef) extends Actor with ActorLogging {
     case post: POST => sender ! createGroup(post.json)
     case g: GET => sender ! getGroup(g.id)
     case g: GETS => sender ! getGroups(g.username)
+    case p: PUT => sender ! updateGroup(p.id, p.json)
     case d: DELETE => sender ! deleteGroup(d.id)
   }
 
@@ -132,4 +136,15 @@ class GroupActor(group: ActorRef) extends Actor with ActorLogging {
   def getGroups(username: Option[String]): Json = await[Groups](group, ReadGroups(username)).toJson
 
   def deleteGroup(id: String): Boolean = await[Boolean](group, DeleteGroup(id))
+
+  def updateGroup(id: String, json: String): Try[Json] = {
+    Group.parse(json) match {
+      case Right(update_group) =>
+        await[Boolean](group, UpdateGroup(id, update_group)) match {
+          case true => Success(Group.toJson(update_group))
+          case false => Failure(jsonThrowable("[PUT] - Error updating group in the database"))
+        }
+      case Left(error) => Failure(jsonThrowable("[PUT] - Error decoding json group"))
+    }
+  }
 }

@@ -7,7 +7,7 @@ import models.{GroupActor, UserActor}
 import persistence.{GroupMongoPersistence, UserMongoPersistence}
 import play.api.mvc._
 import utils.ActorUtils._
-import utils.Helpers.{GET, DELETE, GETS, POST}
+import utils.Helpers._
 
 import scala.util.{Failure, Success, Try}
 
@@ -26,16 +26,6 @@ object Application extends Controller {
     Ok(views.html.index("Your new application is ready."))
   }
 
-  def getUser(id: String) = Action {
-    val answer = await[Json](mUser, GET(id))
-    Ok(answer.toString()).as("application/json")
-  }
-
-  def getUsers = Action {
-    val answer = await[Json](mUser, GETS(None, None))
-    Ok(answer.toString()).as("application/json")
-  }
-
   def createUser = Action { request =>
     request.body.asText match {
       case Some(json) =>
@@ -51,6 +41,28 @@ object Application extends Controller {
     //Ok(answer.toString()).as("application/json")
   }
 
+  def getUser(id: String) = Action {
+    val answer = await[Json](mUser, GET(id))
+    Ok(answer.toString()).as("application/json")
+  }
+
+  def getUsers = Action {
+    val answer = await[Json](mUser, GETS(None, None))
+    Ok(answer.toString()).as("application/json")
+  }
+
+  def updateUser(id: String) = Action { request =>
+    request.body.asText match {
+      case Some(json) => await[Try[Json]](mUser, PUT (id, json)) match {
+        case Success(updated_user) => Status(200)(updated_user.toString())
+        case Failure(e) => Status(500)(e.getMessage)
+      }
+      case None =>
+        val answer = Json("error" -> jString("No data to parse"))
+        Status(406)(answer.toString())
+    }
+  }
+
   def deleteUser(id: String) = Action { request =>
     await[Boolean](mUser, DELETE(id)) match {
       case true => Status(200)("User deleted successfully")
@@ -58,15 +70,13 @@ object Application extends Controller {
     }
   }
 
-  def getGroup(id: String) = Action {
-    val answer = await[Json](mGroup, GET(id))
-    Ok(answer.toString()).as("application/json")
-  }
 
-  def getGroups = Action {  //TODO: POST must come with user !!_id!! or token
-    val answer = await[Json](mGroup, GETS(None, None))
-    Ok(answer.toString()).as("application/json")
-  }
+
+
+
+
+
+
 
   def createGroup = Action { request =>
     val answer = request.body.asText match {
@@ -76,8 +86,30 @@ object Application extends Controller {
     Ok(answer.toString()).as("application/json")
   }
 
+  def getGroup(id_user: String, id_group: String) = Action {
+    val answer = await[Json](mGroup, GET(id_group))
+    Ok(answer.toString()).as("application/json")
+  }
+
+  def getGroups = Action {  //TODO: POST must come with user !!_id!! or token
+  val answer = await[Json](mGroup, GETS(None, None))
+    Ok(answer.toString()).as("application/json")
+  }
+
   def getUserGroups(id: String) = Action { request =>
     Ok(Json("id" -> jString(id)).toString()).as("application/json")
+  }
+
+  def updateGroup(id: String) = Action { request =>
+    request.body.asText match {
+      case Some(json) => await[Try[Json]](mGroup, PUT (id, json)) match {
+        case Success(updated_group) => Status(200)(updated_group.toString())
+        case Failure(e) => Status(500)(e.getMessage)
+      }
+      case None =>
+        val answer = Json("error" -> jString("No data to parse"))
+        Status(406)(answer.toString())
+    }
   }
 
   def deleteGroup(id: String) = Action { request =>
@@ -86,5 +118,11 @@ object Application extends Controller {
       case false => Status(503)("Failed to delete group")    // 500?
     }
   }
+
+  def login = TODO
+
+  def joinGroup(id: String) = TODO
+
+  def abandonGroup(id_user: String, id_group: String) = TODO
 
 }

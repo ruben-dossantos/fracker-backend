@@ -69,7 +69,21 @@ class UserMongoPersistence (db_name: String, collection_name: String) extends Us
     }
   }
 
-  override def updateUser(id: String, user: User): Boolean = ???
+  override def updateUser(id: String, user: User): Boolean = {
+    withMongoConnection {
+      Await.result(
+        users.update(
+          BSONDocument("_id" -> BSONObjectID(id)),
+          user,
+          upsert = true
+        ).map {
+          lastError => lastError.ok
+        }, 5.seconds)
+    } match {
+      case Success(state) => state
+      case Failure(e) => false
+    }
+  }
 
   override def readUser(id: String): Option[User] = {
     withMongoConnection {

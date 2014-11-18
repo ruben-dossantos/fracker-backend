@@ -1,5 +1,7 @@
 package utils
 
+import argonaut.Argonaut._
+import argonaut.Json
 import reactivemongo.bson.BSONObjectID
 
 /**
@@ -24,4 +26,6 @@ object Helpers {
       case Some(x) => Some(BSONObjectID(x))
     }
   }
+
+  def jsonThrowable(text: String) = new Throwable(Json("error" -> jString(text)).toString())
 }

@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
  *
  */
 
-case class User (_id: Option[BSONObjectID], username: String, first_name: String, last_name: String, password: String, lat: String, lon: String, timestamp: Long, groups: List[Group]) //groups: List[String/url]
+case class User (_id: Option[BSONObjectID], username: String, first_name: String, last_name: String, password: Option[String], lat: Option[String], lon: Option[String], timestamp: Option[Long], groups: List[Group]) //groups: List[String/url]
 
 case class Users(users: List[User]) {
   implicit def UsersCodecJson: CodecJson[Users] = casecodec1(Users.apply, Users.unapply)("users")
@@ -22,7 +22,36 @@ case class Users(users: List[User]) {
   def toJson = this.users.asJson
 }
 
+case class UserMinified(_id: Option[BSONObjectID], username: String, first_name: String, last_name: String){
+  //implicit def UserMinifiedCodecJson: CodecJson[UserMinified] = casecodec4(UserMinified.apply, UserMinified.unapply)("_id", "username", "first_name", "last_name")
+
+  def toJson = this.asJson
+}
+
+object UserMinified {
+  implicit def UserMinifiedEncodeJson: EncodeJson[UserMinified] = EncodeJson( (u: UserMinified) => ("_id" := u._id.get.toString()) ->: ("username" := u.username) ->: ("first_name" := u.first_name) ->: ("last_name" := u.last_name) ->: jEmptyObject)
+
+  implicit def UserMinifiedDecodeJson: DecodeJson[UserMinified] = DecodeJson( u => for {
+    _id <- (u --\ "_id").as[Option[String]]
+    username <- (u --\ "username").as[String]
+    first_name <- (u --\ "first_name").as[String]
+    last_name <- (u --\ "last_name").as[String]
+  } yield UserMinified(verify_id(_id), username, first_name, last_name))
+}
+
+case class UsersMinified(users: List[UserMinified]){
+  implicit def UsersMinifiedCodecJson: CodecJson[UsersMinified] = casecodec1(UsersMinified.apply, UsersMinified.unapply)("users")
+
+  def toJson = this.users.asJson
+}
+
 object User {
+
+  def minify(users: List[User]) : Json = {
+    UsersMinified(users map { user =>
+      UserMinified(user._id, user.username, user.first_name, user.last_name)
+    }).toJson
+  }
 
   //TODO: map { group => search in database to encode
   implicit def UserEncodeJson: EncodeJson[User] = EncodeJson( (u: User) => ("_id" := u._id.get.stringify) ->: ("username" := u.username) ->: ("first_name" := u.first_name) ->: ("last_name" := u.last_name) ->: ("lat" := u.lat) ->: ("lon" := u.lon) ->: ("timestamp" := u.timestamp)
@@ -33,10 +62,10 @@ object User {
     username <- (u --\ "username").as[String]
     first_name <- (u --\ "first_name").as[String]
     last_name <- (u --\ "last_name").as[String]
-    password <- (u --\ "password").as[String]
-    lat <- (u --\ "lat").as[String]
-    lon <- (u --\ "lon").as[String]
-    timestamp <- (u --\ "timestamp").as[Long]
+    password <- (u --\ "password").as[Option[String]]
+    lat <- (u --\ "lat").as[Option[String]]
+    lon <- (u --\ "lon").as[Option[String]]
+    timestamp <- (u --\ "timestamp").as[Option[Long]]
     groups <- (u --\ "groups").as[List[Group]]
   } yield User(verify_id(_id), username, first_name, last_name, password, lat, lon, timestamp, groups))
 
@@ -50,10 +79,10 @@ object User {
       val username = doc.getAs[String]("username").get
       val first_name = doc.getAs[String]("first_name").get
       val last_name = doc.getAs[String]("last_name").get
-      val password = doc.getAs[String]("password").get
-      val lat = doc.getAs[String]("lat").get
-      val lon = doc.getAs[String]("lon").get
-      val timestamp = doc.getAs[Long]("timestamp").get
+      val password = doc.getAs[String]("password")
+      val lat = doc.getAs[String]("lat")
+      val lon = doc.getAs[String]("lon")
+      val timestamp = doc.getAs[Long]("timestamp")
       val groups = doc.getAs[List[Group]]("groups").get
       User(Some(_id), username, first_name, last_name, password, lat, lon, timestamp, groups)
     }
@@ -65,10 +94,10 @@ object User {
       val username = doc.getAs[String]("username").get
       val first_name = doc.getAs[String]("first_name").get
       val last_name = doc.getAs[String]("last_name").get
-      val password = doc.getAs[String]("password").get
-      val lat = doc.getAs[String]("lat").get
-      val lon = doc.getAs[String]("lon").get
-      val timestamp = doc.getAs[Long]("timestamp").get
+      val password = doc.getAs[String]("password")
+      val lat = doc.getAs[String]("lat")
+      val lon = doc.getAs[String]("lon")
+      val timestamp = doc.getAs[Long]("timestamp")
       val groups = doc.getAs[List[Group]]("groups").get
       User(Some(_id), username, first_name, last_name, password, lat, lon, timestamp, groups)
     }
@@ -99,7 +128,9 @@ class UserActor(user: ActorRef) extends Actor with ActorLogging{
     case post: POST => sender ! createUser(post.json)
     case g: GET => sender ! getUser(g.id)
     case g: GETS => sender ! getUsers(g.username)
+    case p: PUT => sender ! updateUser(p.id, p.json)
     case d: DELETE => sender ! deleteUser(d.id)
+
   }
 
   def createUser(json: String): Try[Json] = {
@@ -109,11 +140,11 @@ class UserActor(user: ActorRef) extends Actor with ActorLogging{
           case false =>
             await[Option[BSONObjectID]](user, CreateUser(new_user)) match {
               case Some(id) => Success(Json("_id" -> jString(id.stringify)))
-              case None => Failure(new Throwable(Json("error" -> jString("Error creating user in the database")).toString()))
+              case None => Failure(jsonThrowable("Error creating user in the database"))
             }
-          case true => Failure(new Throwable(Json("error" -> jString("user with that username already exists")).toString()))
+          case true => Failure(jsonThrowable("user with that username already exists"))
         }
-      case Left(error) => Failure(new Throwable(Json("error" -> jString("Error decoding json user")).toString()))
+      case Left(error) => Failure(jsonThrowable("Error decoding json user"))
     }
   }
 
@@ -127,6 +158,17 @@ class UserActor(user: ActorRef) extends Actor with ActorLogging{
   def getUsers(username: Option[String]): Json = await[Users](user, ReadUsers(username)).toJson
 
   def deleteUser(id: String): Boolean = await[Boolean](user, DeleteUser(id))
+
+  def updateUser(id: String, json: String): Try[Json] = {
+    User.parse(json) match {
+      case Right(update_user) =>
+        await[Boolean](user, UpdateUser(id, update_user)) match {
+          case true => Success(User.toJson(update_user))
+          case false => Failure(jsonThrowable("[PUT] - Error updating user in the database"))
+        }
+      case Left(error) => Failure(jsonThrowable("[PUT] - Error decoding json user"))
+    }
+  }
 
 
 }
