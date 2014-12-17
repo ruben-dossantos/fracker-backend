@@ -6,11 +6,11 @@
 GET     /                           controllers.Application.index
 
 ### Users
-GET     /user                       controllers.Application.getUsers
-GET     /user/:id                   controllers.Application.getUser(id: String)
+GET     /user                       controllers.UserController.all
+#-GET     /user/:id                   controllers.Application.getUser(id: String)
 #POST    /user                       controllers.Application.createUser
-PUT     /user/:id                   controllers.Application.updateUser(id: String)
-DELETE  /user/:id                   controllers.Application.deleteUser(id: String)
+#-PUT     /user/:id                   controllers.Application.updateUser(id: String)
+#-DELETE  /user/:id                   controllers.Application.deleteUser(id: String)
 
 ### Groups
 #GET     /user/:id/groups            controllers.Application.getUserGroups(id: String)
@@ -18,8 +18,8 @@ DELETE  /user/:id                   controllers.Application.deleteUser(id: Strin
 #GET     /group                      controllers.Application.getGroups
 #GET     /group/:id                  controllers.Application.getGroup(id: String)
 #POST    /group                      controllers.Application.createGroup
-PUT     /group/:id                  controllers.Application.updateGroup(id: String)
-DELETE  /group/:id                  controllers.Application.deleteGroup(id: String)
+#-PUT     /group/:id                  controllers.Application.updateGroup(id: String)
+#-DELETE  /group/:id                  controllers.Application.deleteGroup(id: String)
 
 # Map static resources from the /public folder to the /assets URL path
 #GET     /assets/*file               controllers.Assets.at(path="/public", file)
@@ -29,25 +29,25 @@ DELETE  /group/:id                  controllers.Application.deleteGroup(id: Stri
 
 ## login
 ## must return _id
-POST    /login                      controllers.Application.login
+POST    /login                      controllers.UserController.login
 ## create user
 ## can return 201 CREATED
-POST    /signup                     controllers.Application.createUser
+POST    /signup                     controllers.UserController.signup
 ## read user's group
 ## must return user's groups
-GET     /user/:id/group             controllers.Application.getUserGroups(id: String)
+#GET     /user/:id/group             controllers.Application.getUserGroups(id: String)
 ## read friends locations
 ## must return user's group info like a user list with locations
-GET     /user/:user/group/:group    controllers.Application.getGroup(user: String, group: String)
+#GET     /user/:user/group/:group    controllers.Application.getGroup(user: String, group: String)
 ## create group
 ## must return group _id
-POST    /group                      controllers.Application.createGroup
+POST    /group                      controllers.GroupController.create
 ## update user with a new group
 ## must return user's info
-PUT     /user/:id/group             controllers.Application.joinGroup(id: String)
+PUT     /user/:id/group             controllers.UserGroupController.joinGroup(id: Long)
 ## delete group from user
 ## must return ok?
-DELETE  /user/:user/group/:group    controllers.Application.abandonGroup(user: String, group: String)
+DELETE  /user/:user/group/:group    controllers.UserGroupController.abandonGroup(user: Long, group: Long)
 ## read all groups to join
 ## must return all groups
-GET     /group                      controllers.Application.getGroups
+GET     /group                      controllers.GroupController.all

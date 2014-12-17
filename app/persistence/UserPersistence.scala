@@ -1,7 +1,7 @@
 package persistence
 
 import akka.actor.Actor
-import models.{Users, User}
+import models.User
 import persistence.UserPersistence._
 import reactivemongo.bson.BSONObjectID
 
@@ -30,14 +30,14 @@ abstract class UserPersistence extends Actor {
 
   def receive = {
     case cu: CreateUser => sender ! createUser(cu.user)
-    case rus: ReadUsers => sender ! readUsers(rus.name)
+    //case rus: ReadUsers => sender ! readUsers(rus.name)
     case ru: ReadUser => sender ! readUser(ru.id)
     case uu: UpdateUser => sender ! updateUser(uu.id, uu.user)
     case du: DeleteUser => sender ! deleteUser(du.id)
     case fu: FindUser => sender ! findUser(fu.username)
   }
 
-  def readUsers(name: Option[String]): Users = { Users(List()) }
+  //def readUsers(name: Option[String]): Users = { Users(List()) }
 
   def createUser(user: User): Option[BSONObjectID]
 
