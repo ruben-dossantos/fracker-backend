@@ -28,12 +28,33 @@ object UserGroupController extends Controller{
     rs.request.body.validate[UserGroup].map { user_group =>
       try {
 
-//        users_groups.delete(id_user, id_group)
+        //users_groups.flatMap(ug => ug.user.filter( u=> u.id === user_group.user.get) && ug.group.filter( g => g.id === user_group.group.get)).delete
         Ok(Json.toJson(user_group))
       } catch {
         case e: Exception => Ok(e.getMessage)
       }
     }.getOrElse(BadRequest("invalid json"))
+  }
+
+  def getUserGroups(id: Long) = DBAction{ implicit rs =>
+
+    UserController.findUserById(id) match {
+      case Some(user) =>
+//        val userGroups = users_groups.filter(ug => ug.user === user.id.get).run
+
+//        Ok(Json.toJson(userGroups))
+        Ok("TODO")
+      case None => BadRequest("invalid json")
+    }
+//    rs.request.body.validate[UserGroup].map { user_group =>
+//      try {
+//
+//        users_groups.filter(u => u.user === user_group.user.get && u.group === user_group.group.get).delete
+//        Ok(Json.toJson(user_group))
+//      } catch {
+//        case e: Exception => Ok(e.getMessage)
+//      }
+//    }.getOrElse(BadRequest("invalid json"))
   }
 
 

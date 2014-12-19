@@ -7,7 +7,7 @@ package models
 import play.api.db.slick.Config.driver.simple._
 import play.api.libs.json.Json
 
-case class User(id: Option[Long], username: String, first_name: String, last_name: String, password: Option[String], lat: Option[String], lon: Option[String], timestamp: Option[Long])
+case class User(id: Option[Long], username: String, first_name: Option[String], last_name: Option[String], password: Option[String], lat: Option[String], lon: Option[String], timestamp: Option[Long])
 
 class UsersTable(tag: Tag) extends Table[User](tag, "users"){
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
@@ -21,7 +21,7 @@ class UsersTable(tag: Tag) extends Table[User](tag, "users"){
 
   def uniqueUsername = index("username", username, unique= true)
 
-  override def * = (id.?, username, first_name, last_name, password.?, lat.?, lon.?, timestamp.?) <> (User.tupled, User.unapply)
+  override def * = (id.?, username, first_name.?, last_name.?, password.?, lat.?, lon.?, timestamp.?) <> (User.tupled, User.unapply)
 }
 
 object UsersTable {

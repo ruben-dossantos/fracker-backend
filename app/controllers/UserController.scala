@@ -4,8 +4,9 @@ import models.User
 import models.UsersTable._
 import play.api.db.slick.Config.driver.simple._
 import play.api.db.slick.{DBAction, _}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
+import play.api.db.slick.Session
 
 /**
  * Created by ruben on 17-12-2014.
@@ -39,6 +40,43 @@ object UserController extends Controller{
 //    }.getOrElse(BadRequest("invalid json"))
 //  }
 
-  def login = TODO
+  def login = DBAction(parse.json){ implicit rs =>
 
+    val cenas = findUserById(1)
+    println("--c-c--c-c-c " + cenas)
+
+
+    rs.request.body.validate[User].map { user =>
+      try {
+        //users.insert(user)
+        val login = users.filter(u => u.username === user.username && u.password === user.password).take(1).run
+        Ok(Json.toJson(login(0)))
+      } catch {
+        case e: Exception => Ok(e.getMessage)
+      }
+    }.getOrElse(BadRequest("invalid json"))
+  }
+
+
+  def getUserByJson(json: JsValue) = {
+    var user :Option[User] = None
+    json.validate[User].map { u =>
+      user = Some(u)
+    }
+    user
+  }
+
+  def findUser(user: User)(implicit s: Session) = {
+
+    val this_user = users.filter(u => u.username === user.username).take(1).run
+    this_user(0)
+  }
+
+  def findUserById(id: Long)(implicit s: Session) = {
+
+    val this_user = users.filter(u => u.id === id).take(1).run
+    if( this_user.size > 0){
+      Some(this_user(0))
+    } else { None }
+  }
 }
