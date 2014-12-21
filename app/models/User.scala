@@ -5,9 +5,25 @@ package models
  *
  */
 import play.api.db.slick.Config.driver.simple._
-import play.api.libs.json.Json
+import play.api.libs.json._
+
 
 case class User(id: Option[Long], username: String, first_name: Option[String], last_name: Option[String], password: Option[String], lat: Option[String], lon: Option[String], timestamp: Option[Long])
+
+object User {
+  implicit val userWrites = new Writes[User] {
+    def writes(u: User): JsValue = {
+      Json.obj(
+        "id" -> u.id,
+        "username" -> u.username,
+        "first_name" -> u.first_name,
+        "last_name" -> u.last_name,
+        "lat" -> u.lat,
+        "lon" -> u.lon
+      )
+    }
+  }
+}
 
 class UsersTable(tag: Tag) extends Table[User](tag, "users"){
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
@@ -21,10 +37,23 @@ class UsersTable(tag: Tag) extends Table[User](tag, "users"){
 
   def uniqueUsername = index("username", username, unique= true)
 
-  override def * = (id.?, username, first_name.?, last_name.?, password.?, lat.?, lon.?, timestamp.?) <> (User.tupled, User.unapply)
+  override def * = (id.?, username, first_name.?, last_name.?, password.?, lat.?, lon.?, timestamp.?) <> ((User.apply _).tupled, User.unapply)
 }
 
 object UsersTable {
   val users = TableQuery[UsersTable]
   implicit val catFormat  = Json.format[User]
+
+  def findUserById(id: Long) = {
+    users.filter(u => u.id === id)
+  }
+
+  def findUserByUsername(username: String) = {
+    users.filter(u => u.username === username)
+  }
+
+  def findLogin(username: String, password: Option[String])= {
+    users.filter(u => u.username === username && u.password === password)
+  }
+
 }

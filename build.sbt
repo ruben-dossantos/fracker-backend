@@ -1,3 +1,5 @@
+import play.PlayScala
+
 name := """backend-fracker"""
 
 version := "1.0-SNAPSHOT"

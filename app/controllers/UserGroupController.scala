@@ -1,6 +1,6 @@
 package controllers
 
-import models.UserGroup
+import models._
 import models.UsersGroupsTable._
 import play.api.db.slick.Config.driver.simple._
 import play.api.db.slick.{DBAction, _}
@@ -24,38 +24,51 @@ object UserGroupController extends Controller{
     }.getOrElse(BadRequest("invalid json"))
   }
 
-  def abandonGroup(id_user: Long, id_group: Long) = DBAction(parse.json){ implicit rs =>
-    rs.request.body.validate[UserGroup].map { user_group =>
+  def abandonGroup(id_user: Long, id_group: Long) = DBAction{ implicit rs =>
+
       try {
 
-        //users_groups.flatMap(ug => ug.user.filter( u=> u.id === user_group.user.get) && ug.group.filter( g => g.id === user_group.group.get)).delete
-        Ok(Json.toJson(user_group))
+        users_groups.filter(ug => ug.userID === id_user && ug.groupID === id_group).delete
+        Status(204)("Successfully deleted")
       } catch {
         case e: Exception => Ok(e.getMessage)
       }
-    }.getOrElse(BadRequest("invalid json"))
+
   }
 
   def getUserGroups(id: Long) = DBAction{ implicit rs =>
-
-    UserController.findUserById(id) match {
-      case Some(user) =>
-//        val userGroups = users_groups.filter(ug => ug.user === user.id.get).run
-
-//        Ok(Json.toJson(userGroups))
-        Ok("TODO")
-      case None => BadRequest("invalid json")
+    val user = UsersTable.findUserById(id).run
+    if( user.size > 0) {
+      val userGroups = users_groups.filter(ug => ug.userID === user(0).id.get).run
+      var groups: List[Group] = List[Group]()
+      userGroups map { ug =>
+        val group = GroupsTable.findGroupById(ug.group.get).run
+        groups = group(0) :: groups
+      }
+      val ugs = UserGroups(user(0).username, groups)
+      Ok(Json.toJson(ugs))
+    } else {
+      Status(404)("User not found")
     }
-//    rs.request.body.validate[UserGroup].map { user_group =>
-//      try {
-//
-//        users_groups.filter(u => u.user === user_group.user.get && u.group === user_group.group.get).delete
-//        Ok(Json.toJson(user_group))
-//      } catch {
-//        case e: Exception => Ok(e.getMessage)
-//      }
-//    }.getOrElse(BadRequest("invalid json"))
   }
 
+
+  def getFriends(userId: Long, groupId: Long) = DBAction{ implicit rs =>
+    val user = UsersTable.findUserById(userId).run
+    val group = GroupsTable.findGroupById(groupId).run
+    if( user.size > 0 && group.size > 0) {
+      val userGroups = users_groups.filter(ug => ug.groupID === group(0).id.get).run
+
+      var users: List[User] = List[User]()
+      userGroups map { ug =>
+        val user = UsersTable.findUserById(ug.user.get).run
+        users = user(0) :: users
+      }
+      val gus = GroupUsers(group(0).name, users)
+      Ok(Json.toJson(gus))
+    } else {
+      Status(404)("User or group not found")
+    }
+  }
 
 }

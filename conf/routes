@@ -38,7 +38,7 @@ POST    /signup                     controllers.UserController.signup
 GET     /user/:id/group             controllers.UserGroupController.getUserGroups(id: Long)
 ## read friends locations
 ## must return user's group info like a user list with locations
-#GET     /user/:user/group/:group    controllers.Application.getGroup(user: String, group: String)
+GET     /user/:user/group/:group    controllers.UserGroupController.getFriends(user: Long, group: Long)
 ## create group
 ## must return group _id
 POST    /group                      controllers.GroupController.create

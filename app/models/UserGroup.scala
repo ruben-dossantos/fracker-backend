@@ -5,11 +5,37 @@ package models
  *
  */
 import play.api.db.slick.Config.driver.simple._
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Writes, Json}
 import models.UsersTable._
 import models.GroupsTable._
 
 case class UserGroup(user: Option[Long], group: Option[Long])
+
+case class UserGroups(username: String, groups: List[Group])
+
+object UserGroups {
+  implicit val userGroupsWrites = new Writes[UserGroups] {
+    def writes(ugs: UserGroups): JsValue = {
+      Json.obj(
+        "username" -> ugs.username,
+        "groups" -> ugs.groups
+      )
+    }
+  }
+}
+
+case class GroupUsers(name: String, users: List[User])
+
+object GroupUsers {
+  implicit val groupUsersWrites = new Writes[GroupUsers] {
+    def writes(gus: GroupUsers): JsValue = {
+      Json.obj(
+        "name" -> gus.name,
+        "users" -> gus.users
+      )
+    }
+  }
+}
 
 class UsersGroupsTable(tag: Tag) extends Table[UserGroup](tag, "users_groups"){
   def userID = column[Long]("user")
@@ -30,4 +56,14 @@ object UsersGroupsTable {
     u <- users
     g <- groups
   } yield(u.username, g.name)
+
+
+  def findUserGroups(id: Long) = {
+    users_groups.filter(ug => ug.userID === id)
+
+  }
+
+  def findGroupUsers(id: Long) = {
+    users_groups.filter(ug => ug.groupID === id)
+  }
 }

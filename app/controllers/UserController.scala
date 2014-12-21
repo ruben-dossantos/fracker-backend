@@ -1,6 +1,6 @@
 package controllers
 
-import models.User
+import models.{UsersTable, User}
 import models.UsersTable._
 import play.api.db.slick.Config.driver.simple._
 import play.api.db.slick.{DBAction, _}
@@ -41,15 +41,9 @@ object UserController extends Controller{
 //  }
 
   def login = DBAction(parse.json){ implicit rs =>
-
-    val cenas = findUserById(1)
-    println("--c-c--c-c-c " + cenas)
-
-
     rs.request.body.validate[User].map { user =>
       try {
-        //users.insert(user)
-        val login = users.filter(u => u.username === user.username && u.password === user.password).take(1).run
+        val login = UsersTable.findLogin(user.username, user.password).take(1).run
         Ok(Json.toJson(login(0)))
       } catch {
         case e: Exception => Ok(e.getMessage)
@@ -66,17 +60,17 @@ object UserController extends Controller{
     user
   }
 
-  def findUser(user: User)(implicit s: Session) = {
+//  def findUser(user: User)(implicit s: Session) = {
+//
+//    val this_user = users.filter(u => u.username === user.username).take(1).run
+//    this_user(0)
+//  }
 
-    val this_user = users.filter(u => u.username === user.username).take(1).run
-    this_user(0)
-  }
-
-  def findUserById(id: Long)(implicit s: Session) = {
-
-    val this_user = users.filter(u => u.id === id).take(1).run
-    if( this_user.size > 0){
-      Some(this_user(0))
-    } else { None }
-  }
+//  def findUserById(id: Long)(implicit s: Session) = {
+//
+//    val this_user = users.filter(u => u.id === id).take(1).run
+//    if( this_user.size > 0){
+//      Some(this_user(0))
+//    } else { None }
+//  }
 }
