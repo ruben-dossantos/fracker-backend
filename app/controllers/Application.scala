@@ -16,20 +16,6 @@ object Application extends Controller {
   //val mGroup = system.actorOf(GroupActor.props(group), name = "GroupModelActor")
 
   def index = Action {
-    var outString = "Number is "
-    val ds = DB.getDataSource()
-    println(ds)
-    val conn = DB.getConnection()
-    try {
-      val stmt = conn.createStatement
-      val rs = stmt.executeQuery("SELECT 9 as testkey ")
-      while (rs.next()) {
-        outString += rs.getString("testkey")
-      }
-      println(outString)
-    } finally {
-      conn.close()
-    }
     Ok(views.html.index("Your new application is ready."))
   }
 

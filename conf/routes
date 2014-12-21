@@ -3,10 +3,10 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
+GET           /                               controllers.Application.index
 
 ### Users
-GET     /user                       controllers.UserController.all
+GET           /user                           controllers.UserController.all
 #-GET     /user/:id                   controllers.Application.getUser(id: String)
 #POST    /user                       controllers.Application.createUser
 #-PUT     /user/:id                   controllers.Application.updateUser(id: String)
@@ -29,25 +29,28 @@ GET     /user                       controllers.UserController.all
 
 ## login
 ## must return _id
-POST    /login                      controllers.UserController.login
+POST          /login                          controllers.UserController.login
 ## create user
 ## can return 201 CREATED
-POST    /signup                     controllers.UserController.signup
+POST          /signup                         controllers.UserController.signup
 ## read user's group
 ## must return user's groups
-GET     /user/:id/group             controllers.UserGroupController.getUserGroups(id: Long)
+GET           /user/:id/group                 controllers.UserGroupController.getUserGroups(id: Long)
 ## read friends locations
 ## must return user's group info like a user list with locations
-GET     /user/:user/group/:group    controllers.UserGroupController.getFriends(user: Long, group: Long)
+GET           /user/:user/group/:group        controllers.UserGroupController.getFriends(user: Long, group: Long)
 ## create group
 ## must return group _id
-POST    /group                      controllers.GroupController.create
+POST          /group                          controllers.GroupController.create
 ## update user with a new group
 ## must return user's info
-PUT     /user/:id/group             controllers.UserGroupController.joinGroup(id: Long)
+PUT           /user/:id/group                 controllers.UserGroupController.joinGroup(id: Long)
 ## delete group from user
 ## must return ok?
-DELETE  /user/:user/group/:group    controllers.UserGroupController.abandonGroup(user: Long, group: Long)
+DELETE        /user/:user/group/:group        controllers.UserGroupController.abandonGroup(user: Long, group: Long)
 ## read all groups to join
 ## must return all groups
-GET     /group                      controllers.GroupController.all
+GET           /group                          controllers.GroupController.all
+## update user position
+## must return ok
+PUT             /user/:user                     controllers.UserController.updatePosition(user: Long)

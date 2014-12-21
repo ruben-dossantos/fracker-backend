@@ -2,6 +2,7 @@ package controllers
 
 import models.{UsersTable, User}
 import models.UsersTable._
+import org.joda.time.DateTime
 import play.api.db.slick.Config.driver.simple._
 import play.api.db.slick.{DBAction, _}
 import play.api.libs.json.{JsValue, Json}
@@ -60,17 +61,17 @@ object UserController extends Controller{
     user
   }
 
-//  def findUser(user: User)(implicit s: Session) = {
-//
-//    val this_user = users.filter(u => u.username === user.username).take(1).run
-//    this_user(0)
-//  }
 
-//  def findUserById(id: Long)(implicit s: Session) = {
-//
-//    val this_user = users.filter(u => u.id === id).take(1).run
-//    if( this_user.size > 0){
-//      Some(this_user(0))
-//    } else { None }
-//  }
+  def updatePosition(id: Long) = DBAction(parse.json){ implicit rs =>
+    rs.request.body.validate[User].map { user_json =>
+      try {
+        val user = UsersTable.findUserById(id).run
+        val updated_user = User(user(0).id, user(0).username, user(0).first_name, user(0).last_name, user(0).password, user_json.lat, user_json.lon, Some(new DateTime().getMillis))
+        UsersTable.findUserById(id).update(updated_user)
+        Ok(Json.toJson(updated_user))
+      } catch {
+        case e: Exception => Ok(e.getMessage)
+      }
+    }.getOrElse(BadRequest("invalid json"))
+  }
 }
