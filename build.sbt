@@ -1,4 +1,12 @@
 import play.PlayScala
+import com.typesafe.sbt.SbtNativePackager._
+import NativePackagerKeys._
+
+maintainer in Linux := "Ruben Barros <ruben.23@live.com.pt>"
+
+packageSummary in Linux := "Backend-Fracker"
+
+packageDescription := "API server for Fracker Mobile App"
 
 name := """backend-fracker"""
 

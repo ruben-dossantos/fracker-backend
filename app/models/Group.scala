@@ -37,4 +37,8 @@ object GroupsTable {
   def findGroupById(id: Long) = {
     groups.filter(g => g.id === id)
   }
+
+  def findGroupByName(name: String) = {
+    groups.filter(g => g.name like("%" + name + "%"))
+  }
 }
