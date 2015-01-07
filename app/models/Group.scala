@@ -6,17 +6,20 @@ package models
  */
 import play.api.db.slick.Config.driver.simple._
 import play.api.libs.json.{JsValue, Writes, Json}
+import models.UsersTable._
 
-case class Group(id: Option[Long], name: String, password: String)
+case class Group(id: Option[Long], name: String, password: String, owner: Option[Long])
 
 class GroupsTable(tag: Tag) extends Table[Group](tag, "groups"){
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
   def name = column[String]("name")
   def password = column[String]("password")
+  def owner = column[Long]("owner", O.Default(1))
 
+  def user = foreignKey("owner_FK", owner, users)(_.id)
   def uniqueName = index("name", name, unique = true)
 
-  override def * = (id.?, name, password) <> ((Group.apply _).tupled, Group.unapply)
+  override def * = (id.?, name, password, owner.?) <> ((Group.apply _).tupled, Group.unapply)
 }
 
 object Group {
@@ -41,4 +44,5 @@ object GroupsTable {
   def findGroupByName(name: String) = {
     groups.filter(g => g.name like("%" + name + "%"))
   }
+
 }
