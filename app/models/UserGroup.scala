@@ -60,10 +60,13 @@ object UsersGroupsTable {
 
   def findUserGroups(id: Long) = {
     users_groups.filter(ug => ug.userID === id)
-
   }
 
   def findGroupUsers(id: Long) = {
     users_groups.filter(ug => ug.groupID === id)
+  }
+
+  def ownerAutoJoin(user: Option[Long], group: Option[Long])(implicit s: Session) = {
+    users_groups.insert(UserGroup(user, group))
   }
 }

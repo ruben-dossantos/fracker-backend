@@ -53,4 +53,4 @@ DELETE        /user/:user/group/:group        controllers.UserGroupController.ab
 GET           /group                          controllers.GroupController.all
 ## update user position
 ## must return ok
-PUT             /user/:user                     controllers.UserController.updatePosition(user: Long)
+PUT           /user/:user                     controllers.UserController.updatePosition(user: Long)
