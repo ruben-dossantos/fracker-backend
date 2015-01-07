@@ -1,7 +1,7 @@
 package controllers
 
-import models.{GroupsTable, Group}
 import models.GroupsTable._
+import models.{UsersGroupsTable, Group, GroupsTable}
 import play.api.db.slick.Config.driver.simple._
 import play.api.db.slick.{DBAction, _}
 import play.api.libs.json.Json
@@ -25,7 +25,9 @@ object GroupController extends Controller{
   def create = DBAction(parse.json){ implicit rs =>
     rs.request.body.validate[Group].map { group =>
       try {
-        groups.insert(group)
+        val groupId = (groups returning groups.map(_.id)) += group
+//        groups.insert(group)
+        UsersGroupsTable.ownerAutoJoin(group.owner, Some(groupId)).run
         Ok(Json.toJson(group))
       } catch {
         case e: Exception => Ok(e.getMessage)
