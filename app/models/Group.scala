@@ -45,7 +45,16 @@ object GroupsTable {
     groups.filter(g => g.name like("%" + name + "%"))
   }
 
-  def test(cenas: Long) = {
-    groups.filter(g => g.id =!= cenas)
+  def test(list: List[Long]) = {
+    var first = true
+    var group: Query[GroupsTable,GroupsTable#TableElementType,Seq] = groups.filter(g => g.id =!= list(0))
+    list map { id =>
+      if(first){
+        first = false
+      } else {
+        group = group.filter(g => g.id =!= id)
+      }
+    }
+    group
   }
 }
