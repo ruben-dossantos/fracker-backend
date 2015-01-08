@@ -8,7 +8,7 @@ import play.api.db.slick.Config.driver.simple._
 import play.api.libs.json._
 
 
-case class User(id: Option[Long], username: String, first_name: Option[String], last_name: Option[String], password: Option[String], lat: Option[String], lon: Option[String], timestamp: Option[Long])
+case class User(id: Option[Long], username: String, first_name: Option[String], last_name: Option[String], password: Option[String], lat: Option[String], lon: Option[String], timestamp: Option[Long], preferenceDistance: Option[Double])
 
 object User {
   implicit val userWrites = new Writes[User] {
@@ -19,7 +19,8 @@ object User {
         "first_name" -> u.first_name,
         "last_name" -> u.last_name,
         "lat" -> u.lat,
-        "lon" -> u.lon
+        "lon" -> u.lon,
+        "preferenceDistance" -> u.preferenceDistance
       )
     }
   }
@@ -34,10 +35,11 @@ class UsersTable(tag: Tag) extends Table[User](tag, "users"){
   def lat = column[String]("lat", O.Nullable)
   def lon = column[String]("lon", O.Nullable)
   def timestamp = column[Long]("timestamp", O.Nullable)
+  def preferenceDistance = column[Double]("preference_distance", O.Nullable)
 
   def uniqueUsername = index("username", username, unique= true)
 
-  override def * = (id.?, username, first_name.?, last_name.?, password.?, lat.?, lon.?, timestamp.?) <> ((User.apply _).tupled, User.unapply)
+  override def * = (id.?, username, first_name.?, last_name.?, password.?, lat.?, lon.?, timestamp.?, preferenceDistance.?) <> ((User.apply _).tupled, User.unapply)
 }
 
 object UsersTable {

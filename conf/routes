@@ -54,3 +54,6 @@ GET           /group                          controllers.GroupController.all
 ## update user position
 ## must return ok
 PUT           /user/:user                     controllers.UserController.updatePosition(user: Long)
+## update user preference distance
+## must return ok
+PUT           /user/:user/distance            controllers.UserController.updatePreferenceDistance(user: Long)
