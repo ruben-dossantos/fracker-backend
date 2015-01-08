@@ -29,7 +29,7 @@ object UserGroupController extends Controller{
       try {
 
         users_groups.filter(ug => ug.userID === id_user && ug.groupID === id_group).delete
-        Status(204)("Successfully deleted")
+        Status(202)("Successfully deleted")
       } catch {
         case e: Exception => Ok(e.getMessage)
       }
