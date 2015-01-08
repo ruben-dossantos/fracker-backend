@@ -5,13 +5,17 @@ import models.{UsersGroupsTable, User, UsersTable}
 import org.joda.time.DateTime
 import play.api.db.slick.Config.driver.simple._
 import play.api.db.slick.{DBAction, _}
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, Json, JsValue}
 import play.api.mvc._
+
+import scala.util.parsing.json.JSONArray
 
 /**
  * Created by ruben on 17-12-2014.
  *
  */
+case class FriendNotify(username: String, distance: Double)
+
 object UserController extends Controller{
 
   def all = DBAction { implicit rs =>
@@ -29,16 +33,16 @@ object UserController extends Controller{
     }.getOrElse(BadRequest("invalid json"))
   }
 
-//  def delete = DBAction(parse.json){ implicit rs =>
-//    rs.request.body.validate[User].map { user =>
-//      try {
-//        users.delete(user)
-//        Ok(Json.toJson(user))
-//      } catch {
-//        case e: Exception => Ok(e.getMessage)
-//      }
-//    }.getOrElse(BadRequest("invalid json"))
-//  }
+  //  def delete = DBAction(parse.json){ implicit rs =>
+  //    rs.request.body.validate[User].map { user =>
+  //      try {
+  //        users.delete(user)
+  //        Ok(Json.toJson(user))
+  //      } catch {
+  //        case e: Exception => Ok(e.getMessage)
+  //      }
+  //    }.getOrElse(BadRequest("invalid json"))
+  //  }
 
   def login = DBAction(parse.json){ implicit rs =>
     rs.request.body.validate[User].map { user =>
@@ -68,7 +72,7 @@ object UserController extends Controller{
         val updated_user = User(user(0).id, user(0).username, user(0).first_name, user(0).last_name, user(0).password, user_json.lat, user_json.lon, Some(new DateTime().getMillis))
         UsersTable.findUserById(id).update(updated_user)
 
-        val list = List()
+        var list: List[FriendNotify] = List[FriendNotify]()
 
         val groups = UsersGroupsTable.findUserGroups(id).run
         groups map { group =>
@@ -77,14 +81,14 @@ object UserController extends Controller{
           friends map { friend =>
             val found_friend = UsersTable.findUserById(friend.user.get).run
             if(found_friend(0).id.get != id && isPositionStillValid(updated_user.timestamp.get, found_friend(0).timestamp.get) && distanceBetweenCoordinates(updated_user.lat.get, updated_user.lon.get, found_friend(0).lat.get, found_friend(0).lon.get) < 15.0){
-
-              println(found_friend(0))
-              println(distanceBetweenCoordinates(updated_user.lat.get, updated_user.lon.get, found_friend(0).lat.get, found_friend(0).lon.get) + "Km")
+              //TODO: && user.preferedDistance < friendPosition
+              list = FriendNotify(found_friend(0).username, distanceBetweenCoordinates(updated_user.lat.get, updated_user.lon.get, found_friend(0).lat.get, found_friend(0).lon.get)) :: list
             }
           }
         }
 
-        Ok(Json.toJson(updated_user))
+        val json_friends = friendNotifyToJson(list)
+        Ok(Json.toJson(json_friends))
       } catch {
         case e: Exception => Ok(e.getMessage)
       }
@@ -114,4 +118,14 @@ object UserController extends Controller{
   def rad2deg(rad: Double) = rad * 180.0 / Math.PI
 
 
+  def friendNotifyToJson (list: List[FriendNotify]) = {
+    var objects: List[JsObject] = List[JsObject]()
+    list map { f =>
+      objects =  Json.obj(
+        "username" -> f.username,
+        "distance" -> f.distance
+      ) :: objects
+    }
+    Json.arr(objects)
+  }
 }
