@@ -45,4 +45,7 @@ object GroupsTable {
     groups.filter(g => g.name like("%" + name + "%"))
   }
 
+  def test(cenas: Long) = {
+    groups.filter(g => g.id =!= cenas)
+  }
 }

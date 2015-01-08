@@ -18,7 +18,9 @@ object GroupController extends Controller{
       case Some(name) =>
         val found = GroupsTable.findGroupByName(name).run
         Ok( Json.toJson(found))
-      case None => Ok(Json.toJson(groups.list))
+      case None =>
+        test()
+        Ok(Json.toJson(groups.list))
     }
   }
 
@@ -33,6 +35,21 @@ object GroupController extends Controller{
         case e: Exception => Ok(e.getMessage)
       }
     }.getOrElse(BadRequest("invalid json"))
+  }
+
+  def test()= DBAction { implicit rs =>
+    val list = List(1L, 2L, 3L)
+    var first = true
+    var group: Query[GroupsTable,GroupsTable#TableElementType,Seq] = groups.filter(g => g.id =!= list(0))
+    list map { id =>
+      if(first){
+        first = false
+      } else {
+        group = group.filter(g => g.id =!= id)
+      }
+    }
+    val found_groups = group.run
+    Ok(Json.toJson(found_groups))
   }
 
 }

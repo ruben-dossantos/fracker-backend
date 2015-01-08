@@ -57,3 +57,6 @@ PUT           /user/:user                     controllers.UserController.updateP
 ## update user preference distance
 ## must return ok
 PUT           /user/:user/distance            controllers.UserController.updatePreferenceDistance(user: Long)
+
+
+GET             /test                           controllers.GroupController.test()
