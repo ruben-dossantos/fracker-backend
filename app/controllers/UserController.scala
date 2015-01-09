@@ -80,6 +80,7 @@ object UserController extends Controller{
             val found_friend = UsersTable.findUserById(friend.user.get).run
             try {
               val timelyPosition = isPositionStillValid(updated_user.timestamp.get, found_friend(0).timestamp.get)
+              println(updated_user.preferenceDistance)
               val difference = updated_user.preferenceDistance match {
                 case Some(preference) => preference
                 case None => 15.0

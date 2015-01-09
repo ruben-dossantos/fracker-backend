@@ -46,19 +46,19 @@ object GroupsTable {
   }
 
   def test(list: List[Long]) = {
-    try{    
-        var first = true
-        var group: Query[GroupsTable,GroupsTable#TableElementType,Seq] = groups.filter(g => g.id =!= list(0))
-        list map { id =>
-            if(first){
-                first = false
-            } else {
-                group = group.filter(g => g.id =!= id)
-            }
+    try{
+      var first = true
+      var group: Query[GroupsTable,GroupsTable#TableElementType,Seq] = groups.filter(g => g.id =!= list(0))
+      list map { id =>
+        if(first){
+          first = false
+        } else {
+          group = group.filter(g => g.id =!= id)
         }
-        group
+      }
+      group
     } catch {
-	case e:Exception => groups.filter(g => g.id =!= 0L)
+      case e:Exception => groups.filter(g => g.id =!= 0L)
     }
- }
+  }
 }
