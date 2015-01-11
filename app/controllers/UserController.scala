@@ -87,7 +87,11 @@ object UserController extends Controller{
               }
               val distance = distanceBetweenCoordinates(updated_user.lat.get, updated_user.lon.get, found_friend(0).lat.get, found_friend(0).lon.get) < difference
               if(found_friend(0).id.get != id && timelyPosition && distance){
-                list = FriendNotify(found_friend(0).username, distanceBetweenCoordinates(updated_user.lat.get, updated_user.lon.get, found_friend(0).lat.get, found_friend(0).lon.get)) :: list
+                val friend = FriendNotify(found_friend(0).username, distanceBetweenCoordinates(updated_user.lat.get, updated_user.lon.get, found_friend(0).lat.get, found_friend(0).lon.get))
+                if(!list.contains(friend)){
+                  list = FriendNotify(found_friend(0).username, distanceBetweenCoordinates(updated_user.lat.get, updated_user.lon.get, found_friend(0).lat.get, found_friend(0).lon.get)) :: list
+                }
+
               }
             } catch {
               case e: Exception => println("A user had no position!? " + e.getMessage)
