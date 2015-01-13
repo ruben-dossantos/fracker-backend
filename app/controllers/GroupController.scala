@@ -23,8 +23,9 @@ object GroupController extends Controller{
             myGroups map { myGroup =>
               list = myGroup.group.get :: list
             }
-            val found = GroupsTable.test(list).run
-            Ok( Json.toJson(found))
+            var found: Query[GroupsTable,GroupsTable#TableElementType,Seq] = GroupsTable.test(list)
+            found = found.filter(g => g.name like("%" + name + "%"))
+            Ok( Json.toJson(found.run))
           case None =>
             val found = GroupsTable.findGroupByName(name).run
             Ok( Json.toJson(found))
